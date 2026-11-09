@@ -86,7 +86,7 @@ export function accentOf(palette: PaletteColor[]): { hex: string; h: number; s: 
   if (!palette.length) return null;
   const chromatic = palette.find((p) => {
     const { s, l } = rgbToHsl(hexToRgb(p.hex));
-    return s >= 0.2 && l > 0.1 && l < 0.92;
+    return s >= 0.15 && l > 0.1 && l < 0.92;
   });
   const chosen = chromatic ?? palette[0]!;
   return { hex: chosen.hex, ...rgbToHsl(hexToRgb(chosen.hex)) };
