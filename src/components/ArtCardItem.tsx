@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { blurFor, altFor, artHref, vtName } from "@/lib/blur";
+import { blurFor, artHref, vtName } from "@/lib/blur";
 import type { ArtCard } from "@/lib/queries";
 import { TransitionLink } from "./TransitionLink";
 
@@ -10,7 +10,7 @@ export function ArtCardItem({ art, index = 0, priority = false }: { art: ArtCard
   const ratio = Math.min(Math.max(w / h, 0.55), 2.2);
   return (
     <li className="reveal" style={{ "--i": index } as React.CSSProperties}>
-      <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="card" aria-label={altFor(art)}>
+      <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="card">
         <span className="card-img" data-vt style={{ aspectRatio: String(ratio), "--c": art.dominantColor ?? undefined } as React.CSSProperties}>
           <Image
             src={art.imageSmall}
@@ -32,11 +32,11 @@ export function ArtCardItem({ art, index = 0, priority = false }: { art: ArtCard
   );
 }
 
-export function ArtBatch({ items, offset = 0, label }: { items: ArtCard[]; offset?: number; label?: string }) {
+export function ArtBatch({ items, label }: { items: ArtCard[]; offset?: number; label?: string }) {
   return (
     <ul className="masonry" aria-label={label}>
       {items.map((a, i) => (
-        <ArtCardItem key={a.id} art={a} index={i} priority={offset === 0 && i < 4} />
+        <ArtCardItem key={a.id} art={a} index={i} priority={false} />
       ))}
     </ul>
   );
@@ -50,7 +50,7 @@ export function ArtRail({ items, label }: { items: ArtCard[]; label: string }) {
         const ratio = Math.min(Math.max((art.width ?? 4) / (art.height ?? 5), 0.55), 2.2);
         return (
           <li key={art.id} className="shrink-0 snap-start" style={{ width: `calc(clamp(170px, 20vw, 260px) * ${ratio.toFixed(3)})` }}>
-            <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="card" aria-label={altFor(art)}>
+            <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="card">
               <span className="card-img" data-vt style={{ height: "clamp(170px, 20vw, 260px)", "--c": art.dominantColor ?? undefined } as React.CSSProperties}>
                 <Image src={art.imageSmall} alt="" fill sizes="260px" placeholder="blur" blurDataURL={blurFor(art.dominantColor)} loading={i < 3 ? "eager" : "lazy"} />
               </span>

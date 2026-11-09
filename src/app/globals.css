@@ -8,7 +8,7 @@
   --paper-3: #dbd6c8;
   --ink: #15130e;
   --ink-2: #47433a;
-  --ink-3: #66615a;
+  --ink-3: #5e5950;
   --accent: #1d6a58;
   --accent-ink: #f3f0e8;
   --shadow: rgb(21 19 14 / 0.22);
@@ -33,7 +33,7 @@
   --paper-3: #2b2923;
   --ink: #efeadf;
   --ink-2: #c6c0b1;
-  --ink-3: #9d9788;
+  --ink-3: #aea998;
   --accent: #82c8b2;
   --accent-ink: #0f1a16;
   --shadow: rgb(0 0 0 / 0.55);
@@ -47,7 +47,7 @@
     --paper-3: #2b2923;
     --ink: #efeadf;
     --ink-2: #c6c0b1;
-    --ink-3: #9d9788;
+    --ink-3: #aea998;
     --accent: #82c8b2;
     --accent-ink: #0f1a16;
     --shadow: rgb(0 0 0 / 0.55);
@@ -95,7 +95,7 @@ img { max-width: 100%; }
   border-radius: 1px;
 }
 
-.display { font-family: var(--font-display); font-optical-sizing: auto; font-variation-settings: "SOFT" 30, "WONK" 0; letter-spacing: -0.015em; line-height: 1.05; font-weight: 380; }
+.display { font-family: var(--font-display); font-optical-sizing: auto; letter-spacing: -0.015em; line-height: 1.05; font-weight: 380; }
 .display-xl { font-size: var(--step-4); }
 .display-l { font-size: var(--step-3); }
 .display-m { font-size: var(--step-2); line-height: 1.15; }
@@ -177,6 +177,7 @@ img { max-width: 100%; }
   background: var(--bg);
   transition: background-color 0.6s ease;
 }
+.art-stage .meta, .art-panel .meta { color: var(--ink-2); }
 .art-stage .btn-quiet { background: var(--bg-2); }
 .art-stage .btn-quiet:hover { background: color-mix(in oklab, var(--tint) 42%, var(--paper)); }
 .art-stage .btn-quiet[aria-pressed="true"] { background: var(--ink); }

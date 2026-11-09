@@ -20,8 +20,8 @@ export function TodayHero({ art, date }: { art: ArtworkRow; date: string }) {
   const pretty = new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
   return (
     <section aria-labelledby="today-h">
-      <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="block" aria-label={`Open ${art.title}`}>
-        <div className="relative h-[min(78svh,62vw)] min-h-[360px] w-full overflow-hidden bg-paper-3" data-vt style={{ background: art.dominantColor ?? undefined }}>
+      <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="block" >
+        <div className="relative h-[min(66svh,56vw)] min-h-[360px] w-full overflow-hidden bg-paper-3" data-vt style={{ background: art.dominantColor ?? undefined }}>
           <Image
             src={art.imageMedium}
             alt={altFor(art)}
@@ -29,7 +29,7 @@ export function TodayHero({ art, date }: { art: ArtworkRow; date: string }) {
             priority
             fetchPriority="high"
             sizes="100vw"
-            quality={80}
+            quality={72}
             placeholder="blur"
             blurDataURL={blurFor(art.dominantColor)}
             className="kenburns object-cover"

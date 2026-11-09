@@ -3,9 +3,10 @@ import { Fraunces, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { MotionProvider } from "@/components/MotionProvider";
 import { TransitionProvider } from "@/components/TransitionLink";
 
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap", axes: ["opsz", "SOFT"] });
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap", axes: ["opsz"] });
 const inter = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
 
 const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -36,11 +37,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <a className="skip" href="#main">Skip to content</a>
-        <TransitionProvider>
-          <SiteHeader />
-          <main id="main" tabIndex={-1}>{children}</main>
-          <SiteFooter />
-        </TransitionProvider>
+        <MotionProvider>
+          <TransitionProvider>
+            <SiteHeader />
+            <main id="main" tabIndex={-1}>{children}</main>
+            <SiteFooter />
+          </TransitionProvider>
+        </MotionProvider>
       </body>
     </html>
   );

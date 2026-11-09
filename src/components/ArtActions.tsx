@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { addToWallAction, createWallAction, removeFromWallAction, setLikeAction } from "@/app/actions";
@@ -83,8 +84,12 @@ export function ArtActions({ artworkId, museumUrl, museumName }: { artworkId: st
           </button>
           <div ref={menu} className="relative">
             <button type="button" className="btn" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(!open)} disabled={!s}>Add to wall</button>
+            <AnimatePresence>
             {open && s && (
-              <div className="absolute left-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] bg-paper p-3 text-ink shadow-[0_18px_40px_-12px_var(--shadow)]">
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: [0.2, 0.7, 0.2, 1] }}
+                className="absolute left-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] bg-paper p-3 text-ink shadow-[0_18px_40px_-12px_var(--shadow)]">
                 {s.walls.length > 0 ? (
                   <ul className="max-h-60 overflow-auto" role="group" aria-label="Your walls">
                     {s.walls.map((w) => (
@@ -102,8 +107,9 @@ export function ArtActions({ artworkId, museumUrl, museumName }: { artworkId: st
                   <input id="new-wall" name="title" className="field !min-h-11" placeholder="New wall title" maxLength={80} />
                   <button className="btn !min-h-11" type="submit" disabled={pending}>Create</button>
                 </form>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </>
       )}

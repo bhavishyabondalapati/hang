@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = { title: string; iiifBase: string | null; src: string; onClose: () => void };
@@ -33,7 +34,8 @@ export function ZoomOverlay({ title, iiifBase, src, onClose }: Props) {
   }
 
   return (
-    <div ref={root} role="dialog" aria-modal="true" aria-label={`Zoom: ${title}`} className="fixed inset-0 z-50 bg-[#0d0c0a] text-[#efeadf]" onKeyDown={onKey}>
+    <motion.div ref={root} role="dialog" aria-modal="true" aria-label={`Zoom: ${title}`} className="fixed inset-0 z-50 bg-[#0d0c0a] text-[#efeadf]" onKeyDown={onKey}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
       {iiifBase ? <TiledViewer iiifBase={iiifBase} apiRef={api} /> : <PanZoomViewer src={src} title={title} apiRef={api} />}
       <div className="absolute right-3 top-3 flex gap-2 sm:right-5 sm:top-5">
         <button type="button" className="btn" style={{ background: "#efeadf", color: "#0d0c0a" }} aria-label="Zoom in" onClick={() => api.current?.zoomBy(1.5)}>+</button>
@@ -43,7 +45,7 @@ export function ZoomOverlay({ title, iiifBase, src, onClose }: Props) {
       <p className="pointer-events-none absolute bottom-3 left-4 right-4 text-[0.85rem] text-[#b9b3a4]">
         Drag to pan. Scroll, pinch or use + and &minus; to zoom. Esc closes.
       </p>
-    </div>
+    </motion.div>
   );
 }
 
