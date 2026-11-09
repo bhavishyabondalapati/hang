@@ -4,7 +4,7 @@
 
 ## What it does
 
-Hang is an art discovery and curation site. It gathers public-domain (CC0) artworks from the Art Institute of Chicago, the Met and the Cleveland Museum of Art into one searchable collection. Anyone can browse and search. Signed-in users build **walls** (curated collections), arrange them like a real gallery wall, and share them with a public link.
+Hang is a collection of **Chinese art** to look at slowly, then hang. It gathers public-domain (CC0) works from the Cleveland Museum of Art, the Art Institute of Chicago and the Met into one searchable collection: dragons, ink landscapes, bird-and-flower paintings, blue-and-white and celadon porcelain, jade, silk and embroidery, calligraphy and bronzes. Anyone can browse and search. Signed-in users build **walls** (curated collections), arrange them like a real gallery wall, and share them with a public link.
 
 | | |
 |---|---|
@@ -12,11 +12,11 @@ Hang is an art discovery and curation site. It gathers public-domain (CC0) artwo
 
 ## Features
 
-- **Today's piece**: a full-bleed daily artwork (deterministic per date) with a slow Ken Burns zoom and its five-colour palette.
+- **Today's piece**: a full-bleed daily artwork (deterministic per date) with a slow Ken Burns zoom and its five-colour palette. It is drawn only from dragons (robes, paintings, jars), ink landscapes, bird-and-flower paintings and porcelain, and only from works with a good image size. Tall works (robes, vases, scrolls) are shown whole on their own palette colour instead of being cropped.
 - **Wander**: a masonry grid with infinite scroll, staggered fade-in, and no layout shift (aspect ratios come from the database).
-- **Search**: Postgres full-text search with prefix matching, filter chips (museum, medium, century, orientation) and a 12-swatch colour picker (nearest hue). All state lives in the URL, so every search is shareable.
+- **Search**: Postgres full-text search with prefix matching, filter chips for **Theme** (eight themes), **Dynasty** (Shang, Zhou, Han, Tang, Song, Yuan, Ming, Qing, Republic period), museum, medium and orientation, and a 12-swatch colour picker (nearest hue). All state lives in the URL, so every search is shareable.
 - **Artwork page**: the page tints itself from the work's palette. True deep zoom with IIIF tiles for the Art Institute, pan/pinch/wheel zoom for the other two museums. A "More in this color" rail. Like and Add to wall. A link back to the museum. On phones the metadata panel becomes a bottom sheet.
-- **Walls**: three finishes (plaster, gallery white, night), framed works with a title placard, drag-to-reorder (dnd-kit) with keyboard alternatives, a per-wall Open Graph image, and public or private visibility.
+- **Walls**: three finishes (plaster, gallery white, night), framed works with a title placard marked by a small cinnabar-red seal square, drag-to-reorder (dnd-kit) with keyboard alternatives, a per-wall Open Graph image, and public or private visibility.
 - **Accessibility**: skip link, visible focus, descriptive alt text, full keyboard use including wall reorder (Space and arrows, or Earlier/Later buttons), `aria-live` status messages, `prefers-reduced-motion` honoured everywhere, light and dark themes plus a toggle.
 - **Security**: CSP that only allows the museum image hosts, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. Every input is validated with Zod. Every mutation checks ownership and is rate limited. No secrets reach the client bundle.
 
@@ -58,13 +58,13 @@ flowchart LR
 
 ## Data sources and credits
 
-All artwork records and images come from the open-access programs of these museums, used under **CC0 / public domain** terms. Hang filters to public-domain works only.
+All artwork records and images come from the open-access programs of these museums, used under **CC0 / public domain** terms. Each museum adapter enforces its own gate, so nothing else can enter the database:
 
-- **[Art Institute of Chicago](https://api.artic.edu/docs/)**: public-domain works, IIIF images. Data available under CC0.
-- **[The Metropolitan Museum of Art](https://metmuseum.github.io/)**: Open Access collection, only `isPublicDomain=true` works.
-- **[Cleveland Museum of Art](https://openaccess-api.clevelandart.org/)**: Open Access (`cc0`) works.
+- **[Cleveland Museum of Art](https://openaccess-api.clevelandart.org/)**: department "Chinese Art", Open Access (`cc0`) works only.
+- **[Art Institute of Chicago](https://api.artic.edu/docs/)**: department "Arts of Asia", place of origin China, `is_public_domain` works only. IIIF images.
+- **[The Metropolitan Museum of Art](https://metmuseum.github.io/)**: department "Asian Art", culture containing "China", `isPublicDomain=true` works only.
 
-Each artwork page shows the museum's own credit line and links back to the museum page.
+Works with no image, tiny images, or mostly blank or mostly black photographs are skipped at ingest. Every read path (search, feed, detail, today's piece, rails, sitemap, likes) additionally filters to `collection = 'china'`, the marker that a work passed ingestion. Each artwork page shows the museum's own credit line and links back to the museum page.
 
 ## Tools and libraries, and why
 
@@ -93,6 +93,7 @@ PLAN.md                           the build plan, in order
 README.md                         this file
 drizzle.config.ts                 drizzle-kit configuration
 drizzle/0000_init.sql             the initial migration (tables, generated tsvector, indexes)
+drizzle/0001_chinese_art.sql      adds dynasty, themes and collection columns with indexes
 eslint.config.mjs                 ESLint flat config (next core-web-vitals + typescript)
 next.config.ts                    security headers, CSP, image host allow-list
 package.json                      scripts and dependencies
@@ -104,7 +105,8 @@ docs/                             README screenshots
 e2e/browse.spec.ts                E2E: home, search, detail, zoom, headers, theme, 404, API validation
 e2e/helpers.ts                    E2E: mocked sign-in helper
 e2e/walls.spec.ts                 E2E: sign in, create wall, add art, reorder, public view, ownership
-scripts/ingest.ts                 seeds Postgres from the three museums (idempotent, retry, backoff)
+scripts/ingest.ts                 seeds Postgres with Chinese art from the three museums (idempotent, retry, backoff, theme-balanced, quality-gated)
+scripts/prune.ts                  one-off cleanup: removes non-Chinese works and test accounts/walls
 scripts/migrate.ts                applies SQL migrations to DATABASE_URL
 scripts/screenshots.ts            light/dark x mobile/desktop screenshots of every page
 scripts/readme-shots.ts           captures the README images
@@ -144,14 +146,16 @@ src/components/*                  UI: header/footer, theme toggle, cards, hero, 
 src/lib/adapters/{aic,met,cma}.ts one adapter per museum -> shared Artwork type
 src/lib/artwork.ts                Artwork type, ids, century/medium/orientation helpers
 src/lib/color.ts                  palette extraction, HSL, hue distance, contrast
-src/lib/ingest-image.ts           sharp image analysis (ingest only)
+src/lib/dynasty.ts                dynasty list and the parser (text first, then year)
+src/lib/themes.ts                 the eight themes, ingest search terms, keyword classifier, daily-piece themes
+src/lib/ingest-image.ts           sharp image analysis and the quality gate (ingest only)
 src/lib/queries.ts                cached reads: search, wander, daily, detail, walls
 src/lib/services/walls.ts         all mutations: validation, ownership, rate limit
 src/lib/validation.ts             Zod schemas
 src/lib/rate-limit.ts             sliding-window limiter
 src/lib/retry.ts                  fetch with retry/backoff, concurrency helper, stable hash
 src/lib/errors.ts, api.ts, blur.ts, slug.ts   small shared helpers
-tests/*.test.ts                   unit tests (adapters, color, retry, services, actions)
+tests/*.test.ts                   unit tests (adapters, dynasty/themes/quality, color, retry, queries, services, actions)
 tests/fixtures/*.json             recorded museum API responses
 tests/helpers/db.ts               in-memory Postgres for tests
 ```
@@ -178,7 +182,7 @@ cp .env.example .env.local   # then fill in the four values
 ```bash
 # 4. create the tables and load artworks
 npm run db:migrate
-npm run ingest            # ~1,000 per museum; re-run any time, it resumes
+npm run ingest            # ~250 works per theme; re-run any time, it resumes and only adds what is missing
 ```
 
 ## How to run it
@@ -195,7 +199,7 @@ npm run test:e2e          # Playwright (builds and serves the app on :3100)
 npm run build             # production build
 ```
 
-`npm run ingest -- --per-museum 50 --only aic,cma` is handy for a small test seed. Add `--force` to recompute colours.
+`npm run ingest -- --target 200 --only cma,aic` is handy for a small test seed. Add `--force` to re-analyse works that are already stored. After switching an older database to Chinese art, `npm run prune` (`npx tsx scripts/prune.ts --dry` to preview) removes the leftover non-Chinese works and test accounts.
 
 ## How it was built
 
@@ -208,6 +212,7 @@ npm run build             # production build
 7. Designed and built the UI: tokens, type, light/dark, home, search, artwork page, walls, `/me`, error pages.
 8. Ran the app, took screenshots of every page (light/dark, mobile/desktop), critiqued them, fixed what was off, and repeated.
 9. Wrote Playwright E2E tests, ran Lighthouse, tightened accessibility and performance.
+10. Narrowed the collection to Chinese art: gated each adapter to its Chinese department, added dynasty and theme fields (parsed from museum wording), replaced the century filter with Dynasty and Theme, made the ingest balance by theme with an image-quality gate, restricted today's piece to on-theme works, and moved the accent to cinnabar red.
 
 ## Key concepts
 
@@ -215,6 +220,9 @@ npm run build             # production build
 - **Idempotent ingestion.** Upserts by stable id plus skip-if-present means re-running is safe, which matters when a museum rate-limits you.
 - **Retry with exponential backoff and jitter.** The standard way to be a polite API client; it honours `Retry-After`.
 - **Postgres full-text search.** A generated `tsvector` with weights (title > artist > culture > medium) and a GIN index. Prefix queries (`van:*`) make results appear while typing.
+- **Dynasty parsing.** Museums write dynasties as free text ("Qing dynasty (1644–1911), Yongzheng reign"). The parser reads the museum's own wording (never the title: "Song" and "Han" are ordinary words), prefers the earliest mention, recognises reign names, and only falls back to the year when no dynasty is named. If a period outside the nine is named (Jin, Liao, Sui ...) it leaves the field empty rather than guess.
+- **Theme classification.** Keyword rules over title, medium, classification and tags, with guard rails (an "ink landscape" must be a painting, not a vase; a silk-painted fan is not a textile). A work can have several themes.
+- **Defence in depth for what is shown.** Adapters only accept the right department and licence; ingest rejects tiny and blank images; and every query also filters on `collection = 'china'`, so one layer failing cannot surface a wrong work.
 - **Colour search.** Hue is circular (350 and 10 are 20 apart), so distance wraps around 360. Neutral works are excluded by a saturation floor.
 - **Authorization at the service layer.** Every mutation goes through one function that checks the session, validates input, rate limits, and verifies ownership, so server actions and REST handlers can't disagree.
 - **Server vs client components.** Pages are server-rendered and cached; the session is read client-side so pages stay cacheable.
@@ -224,8 +232,11 @@ npm run build             # production build
 
 ## Notes on this build
 
-- **Lighthouse (mobile, simulated throttling, production build):** home 90 to 94, artwork page 92, search 100. Accessibility, best practices and SEO score 100. Performance on the home page varies run to run and sits close to the 90 line, because the hero image is fetched through the image optimizer on a cold cache.
-- **Met coverage.** The Met's API is fronted by a bot filter that temporarily blocked this machine's IP while ingesting. The ingest script waits and backs off but does not try to evade the block, so the Met share depends on how much it allows. Re-running `npm run ingest -- --only met` resumes where it left off.
+- **Collection size.** 1,757 works: Cleveland 815, Art Institute 458, Met 484. That is short of the ~2,000 goal: the Cleveland and Art Institute Chinese departments are exhausted for these themes, and most remaining Met candidates fail the image-size check. By theme (a work can have several): dragons 287, ink landscapes 280, bird-and-flower 243, blue-and-white & celadon 298, jade 282, calligraphy 280, bronzes 281, silk & embroidery 184. Silk & embroidery is the thin one: Cleveland's and the Art Institute's Chinese departments hold almost no textiles, so it is nearly all Met.
+- **Met images are smaller.** The Met's web images top out around 600px, so its works look softer in the grid and detail view than Cleveland's and the Art Institute's. Deep zoom uses the Met's original.
+
+- **Lighthouse (mobile, simulated throttling, production build, after the switch to Chinese art):** home 94, artwork page 93. Accessibility, best practices and SEO score 100. Performance varies a little run to run.
+- **Met politeness.** The Met's API is fronted by a bot filter that blocked this machine's IP once before. The Met collector now runs strictly one request at a time at about one per second, waits out a block at most twice, and gives up instead of pushing. Re-running `npm run ingest -- --only met` resumes where it left off.
 - **Rate limiting** is in memory per server instance (see `DECISIONS.md`).
 
 ## Deploy to Vercel

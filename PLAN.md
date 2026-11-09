@@ -16,3 +16,4 @@ Each step ends in a working state and its own conventional commit.
 9. **Tests**: action tests (auth + ownership), Playwright E2E with mocked sign-in.
 10. **Polish**: Playwright screenshots (light/dark x mobile/desktop), critique, at least two passes.
 11. **Ship**: lint, typecheck, unit, E2E, `next build`; README with diagram; deploy checklist.
+12. **Chinese art focus**: Chinese-only adapters, dynasty + theme fields, theme-balanced ingest with quality gate, prune, Dynasty/Theme filters, on-theme daily piece, cinnabar accent and placard seal.

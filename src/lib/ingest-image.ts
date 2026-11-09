@@ -40,13 +40,20 @@ export const MIN_SHORT_SIDE = 300;
  * tiny images, near-blank (white or flat) images, and photographs that are mostly black.
  * `width`/`height` should be the best-known size of the original image.
  */
-export function rejectReason(a: { width: number; height: number } & PixelStats): string | null {
-  if (Math.max(a.width, a.height) < MIN_LONG_SIDE || Math.min(a.width, a.height) < MIN_SHORT_SIDE) return `tiny image (${a.width}x${a.height})`;
+export function rejectReason(a: { width: number; height: number } & PixelStats, opts: { skipSize?: boolean } = {}): string | null {
+  if (!opts.skipSize && (Math.max(a.width, a.height) < MIN_LONG_SIDE || Math.min(a.width, a.height) < MIN_SHORT_SIDE)) return `tiny image (${a.width}x${a.height})`;
   if (a.dark > 0.85) return "mostly black";
   if (a.light > 0.92) return "mostly blank";
   if (a.spread < 0.03) return "flat / blank";
   return null;
 }
+
+/**
+ * The Met's API gives no pixel size, and its web-large renditions are capped near 600px whatever the original is.
+ * A normal-resolution JPEG original is several hundred KB at least, so a very small file means a very small image.
+ */
+export const MET_MIN_ORIGINAL_BYTES = 300_000;
+export const metOriginalTooSmall = (bytes: number | null) => bytes !== null && bytes < MET_MIN_ORIGINAL_BYTES;
 
 /** Decode an image buffer, read its aspect ratio and compute palette, hue/lightness and quality stats. */
 export async function analyseImage(buf: Buffer): Promise<ImageAnalysis> {

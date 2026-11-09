@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DYNASTIES, parseDynasty } from "@/lib/dynasty";
 import { classifyThemes } from "@/lib/themes";
 import { mediumGroupOf } from "@/lib/artwork";
-import { pixelStats, rejectReason } from "@/lib/ingest-image";
+import { metOriginalTooSmall, pixelStats, rejectReason } from "@/lib/ingest-image";
 
 describe("parseDynasty", () => {
   it("lists the nine dynasties in order", () => {
@@ -105,6 +105,15 @@ describe("image quality gate", () => {
     expect(rejectReason({ ...ok, ...pixelStats(solid(3, 3, 3)) })).toMatch(/black/);
     expect(rejectReason({ ...ok, ...pixelStats(solid(255, 255, 255)) })).toMatch(/blank/);
     expect(rejectReason({ ...ok, ...pixelStats(solid(128, 120, 110)) })).toMatch(/flat/);
+  });
+  it("can skip the size check (the Met has no pixel sizes) while still catching blank images", () => {
+    expect(rejectReason({ width: 300, height: 300, ...pixelStats(noisy) }, { skipSize: true })).toBeNull();
+    expect(rejectReason({ width: 300, height: 300, ...pixelStats(solid(3, 3, 3)) }, { skipSize: true })).toMatch(/black/);
+  });
+  it("treats a tiny Met original (by file size) as tiny, and unknown sizes as fine", () => {
+    expect(metOriginalTooSmall(80_000)).toBe(true);
+    expect(metOriginalTooSmall(2_500_000)).toBe(false);
+    expect(metOriginalTooSmall(null)).toBe(false);
   });
   it("accepts a normal image", () => {
     expect(rejectReason({ ...ok, ...pixelStats(noisy) })).toBeNull();

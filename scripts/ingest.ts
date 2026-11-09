@@ -13,7 +13,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../src/db";
 import { AIC_FIELDS, normalizeAic, normalizeCma, normalizeMet, type AicRaw, type CmaRaw, type MetRaw } from "../src/lib/adapters";
 import { centuryOf, orientationOf, type RawArtwork, type Source } from "../src/lib/artwork";
-import { analyseImage, rejectReason } from "../src/lib/ingest-image";
+import { analyseImage, metOriginalTooSmall, rejectReason } from "../src/lib/ingest-image";
 import { fetchJson, fetchWithRetry, hash01, mapLimit } from "../src/lib/retry";
 import { CHINA_THEMES, THEME_QUERIES, type ChinaTheme } from "../src/lib/themes";
 
@@ -29,7 +29,7 @@ const TARGET = parseInt(opt("target", "2000"), 10);
 const ONLY = opt("only", "cma,aic,met").split(",") as Source[];
 const FORCE = flag("force");
 /** Most works one museum may supply per theme. Cleveland and the Art Institute lean first; the Met fills what is left. */
-const CAP: Record<Source, number> = { cma: 150, aic: 120, met: 110 };
+const CAP: Record<Source, number> = { cma: 150, aic: 120, met: 200 };
 const THEME_TARGET = Math.round(TARGET / CHINA_THEMES.length);
 /** Trim themes that overshoot their target by more than this factor (works on walls or liked are never trimmed). */
 const OVERSHOOT = 1.15;
@@ -185,7 +185,15 @@ async function enrichAndStore(src: Source, items: Candidate[]) {
       const info = await analyseImage(Buffer.from(await res.arrayBuffer()));
       const width = a.width ?? info.width;
       const height = a.height ?? info.height;
-      const why = rejectReason({ width, height, dark: info.dark, light: info.light, spread: info.spread });
+      let why: string | null = null;
+      if (src === "met") {
+        // size from the original's file size (HEAD, nothing downloaded); the rest of the checks as usual
+        const head = await fetch(a.imageLarge, { method: "HEAD" }).catch(() => null);
+        const bytes = head?.ok ? Number(head.headers.get("content-length")) || null : null;
+        if (metOriginalTooSmall(bytes)) why = `tiny image (original ${bytes} bytes)`;
+        await pause(250);
+      }
+      why ??= rejectReason({ width, height, dark: info.dark, light: info.light, spread: info.spread }, { skipSize: src === "met" });
       if (why) { const k = why.replace(/\s*\(.*\)/, ""); rejected[k] = (rejected[k] ?? 0) + 1; return; }
       rows.push({
         id: a.id, source: a.source, nativeId: a.nativeId, title: a.title, artist: a.artist, date: a.date,
