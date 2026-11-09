@@ -1,0 +1,31 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# deps / build
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# python-ish / mac / misc (global convention)
+venv/
+__pycache__/
+.DS_Store
+
+# tests
+test-results/
+playwright-report/
+.playwright/
+
+# vercel
+.vercel/
+
+# local scratch
+screenshots/tmp/
+*.log
