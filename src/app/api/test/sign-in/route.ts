@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { sessions, users } from "@/db/schema";
+import { testAuthEnabled } from "@/lib/test-auth";
 
 /**
  * Test-only sign-in used by Playwright. It creates a user plus a real database session and sets the
  * Auth.js cookie, so the rest of the app exercises its normal code paths.
- * It 404s unless the server was started with E2E_AUTH=1, and never in production.
+ * It 404s unless E2E_AUTH=1 AND NODE_ENV is not "production" (see src/lib/test-auth.ts).
  */
 export async function POST(req: Request) {
-  if (process.env.E2E_AUTH !== "1" || process.env.NODE_ENV === "production" && process.env.VERCEL) {
+  if (!testAuthEnabled()) {
     return new NextResponse("Not found", { status: 404 });
   }
   const { name = "E2E Curator", key = "e2e" } = (await req.json().catch(() => ({}))) as { name?: string; key?: string };

@@ -16,7 +16,7 @@ Judgement calls made without stopping to ask.
 - **Daily artwork:** deterministic hash of the UTC date over a stable ordering of artworks (no randomness, no state).
 - **Rate limiting:** in-memory sliding window per user per action. It resets per serverless instance, which is fine as abuse friction; a shared store (Upstash) is the upgrade path.
 - **Sessions:** Auth.js database sessions through the Drizzle adapter (so ownership is checked against a real user row).
-- **E2E sign-in is mocked** with a test-only credentials provider that is only enabled when `E2E_AUTH=1`, never in production builds.
+- **E2E sign-in is mocked** with a test-only credentials provider that is only enabled when `E2E_AUTH=1` and NODE_ENV is not production. Because of that, E2E runs against `next dev`; `npm run build` covers the production build.
 - **Ingest size (original):** ~1,000 per museum, concurrency-limited, with backoff and `ON CONFLICT DO UPDATE` for idempotency.
 
 ## Content filter

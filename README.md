@@ -284,7 +284,7 @@ The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-
 3. **Update the GitHub OAuth app**: set the Authorization callback URL to
    `https://<your-domain>/api/auth/callback/github` (and the Homepage URL to `https://<your-domain>`). Use a separate OAuth app for local development, since a GitHub app has one callback URL.
 4. Run the migration and the ingest once against the production database (from your machine, with that `DATABASE_URL` in `.env.local`): `npm run db:migrate && npm run ingest`.
-5. Do **not** set `E2E_AUTH` on Vercel. The test sign-in route only works when it is `1`.
+5. Do **not** set `E2E_AUTH` on Vercel. The test sign-in route also refuses to run when NODE_ENV is production, so it is always off on Vercel.
 
 ## License
 
