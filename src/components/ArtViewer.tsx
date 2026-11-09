@@ -11,11 +11,11 @@ export function ArtViewer(props: { id: string; title: string; alt: string; src: 
   const [zoom, setZoom] = useState(false);
   const ratio = props.width && props.height ? props.width / props.height : 1;
   return (
-    <div className="relative flex h-full min-h-[300px] items-center justify-center px-[var(--gutter)] py-6">
+    <div className="art-fit relative flex w-full min-h-[300px] items-center justify-center px-[var(--gutter)] py-6">
       <button
         type="button" onClick={() => setZoom(true)} aria-label={`Zoom into ${props.title}`}
-        className="relative block max-h-full max-w-full cursor-zoom-in border-0 bg-transparent p-0"
-        style={{ aspectRatio: String(ratio), height: "min(100%, 82svh)", maxWidth: "100%", background: props.color ?? undefined }}
+        className="relative block cursor-zoom-in border-0 p-0"
+        style={{ aspectRatio: String(ratio), width: `min(100%, calc(var(--max-h) * ${ratio.toFixed(4)}))`, background: props.color ?? undefined }}
         data-vt
         ref={(el) => { if (el) el.style.viewTransitionName = vtName(props.id); }}
       >

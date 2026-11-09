@@ -181,6 +181,9 @@ img { max-width: 100%; }
 .art-stage .btn-quiet:hover { background: color-mix(in oklab, var(--tint) 42%, var(--paper)); }
 .art-stage .btn-quiet[aria-pressed="true"] { background: var(--ink); }
 
+.art-fit { --max-h: min(calc(100svh - 15rem), 82svh); }
+@media (min-width: 1024px) { .art-fit { --max-h: min(calc(100svh - 9rem), 86svh); } }
+
 /* ---------- gallery wall ---------- */
 .wall {
   --wall: #cfc6b4; --wall-ink: #17140f; --wall-ink-2: #4a443a; --frame: #1b1712; --mat: #f1ede3; --wall-shadow: rgb(30 22 10 / 0.38);

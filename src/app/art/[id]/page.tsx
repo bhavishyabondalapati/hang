@@ -55,7 +55,7 @@ export default async function ArtPage({ params }: { params: Promise<{ id: string
   return (
     <div className="art-stage" style={{ "--tint": a.palette[1] ?? a.dominantColor ?? "transparent" } as React.CSSProperties}>
       <div className="flex flex-col lg:min-h-[calc(100svh-4.5rem)] lg:flex-row lg:pr-[var(--gutter)]">
-        <div className="h-[calc(100svh-9.5rem)] min-h-[320px] flex-1 lg:h-[calc(100svh-4.5rem)]">
+        <div className="flex-1 lg:flex lg:items-center">
           <ArtViewer
             id={a.id} title={a.title} alt={altFor(a)} src={a.imageMedium} zoomSrc={a.imageLarge} iiifBase={a.iiifBase}
             color={a.dominantColor} width={a.width} height={a.height}

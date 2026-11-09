@@ -141,7 +141,7 @@ export function WallView(p: WallProps) {
           </div>
         ) : p.isOwner ? (
           <>
-            <p className="meta mt-6 !text-[var(--wall-ink-2)]">Drag a frame to rearrange, or focus one and press Space, then the arrow keys. Each frame also has Earlier and Later buttons.</p>
+            <p className="mt-6 max-w-[60ch] text-[0.9rem]" style={{ color: "var(--wall-ink-2)" }}>Drag a frame to rearrange, or focus one and press Space, then the arrow keys. Each frame also has Earlier and Later buttons.</p>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
               <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
                 <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-[clamp(24px,4.5vw,72px)] gap-y-[clamp(36px,6vw,80px)]" aria-label="Artworks on this wall, in order">
@@ -170,7 +170,7 @@ function Framed({ item, link, priority }: { item: Item; link?: boolean; priority
   const ratio = Math.min(Math.max((item.width ?? 4) / (item.height ?? 5), 0.5), 2.4);
   const inner = (
     <>
-      <span className="frame block" style={{ height: ROW_H, aspectRatio: String(ratio) }}>
+      <span className="frame block" style={{ height: `min(${ROW_H}, calc(min(46vw, 440px) / ${ratio.toFixed(3)}))`, aspectRatio: String(ratio) }}>
         <span className="frame-mat block h-full w-full">
           <span className="frame-img h-full" style={{ "--c": item.dominantColor ?? undefined } as React.CSSProperties}>
             <Image
