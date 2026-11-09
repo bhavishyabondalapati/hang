@@ -4,6 +4,7 @@ import * as schema from "@/db/schema";
 import { AppError } from "../errors";
 import { rateLimit } from "../rate-limit";
 import { uniqueSlug } from "../slug";
+import { isVisible } from "../visibility";
 import { createWallInput, likeInput, reorderInput, updateWallInput, wallIdInput, wallItemInput } from "../validation";
 import type { ZodType } from "zod";
 
@@ -77,7 +78,7 @@ export async function addToWall(db: AnyDb, userId: string | null | undefined, ra
   const uid = gate(userId);
   const { wallId, artworkId } = parse(wallItemInput, raw);
   const wall = await ownedWall(db, uid, wallId);
-  const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), eq(artworks.collection, "china"))).limit(1);
+  const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), isVisible())).limit(1);
   if (!art) throw new AppError("NOT_FOUND", "That artwork isn't in the collection.");
   const [stats] = await db.select({ n: count(), top: max(wallItems.position) }).from(wallItems).where(eq(wallItems.wallId, wallId));
   if ((stats?.n ?? 0) >= MAX_ITEMS_PER_WALL) throw new AppError("LIMIT", `A wall holds up to ${MAX_ITEMS_PER_WALL} works.`);
@@ -104,7 +105,12 @@ export async function reorderWall(db: AnyDb, userId: string | null | undefined, 
   const uid = gate(userId);
   const { wallId, orderedArtworkIds } = parse(reorderInput, raw);
   const wall = await ownedWall(db, uid, wallId);
-  const current = await db.select({ id: wallItems.artworkId }).from(wallItems).where(eq(wallItems.wallId, wallId));
+  // Only works that can be shown take part: a hidden work stays on the wall's rows but is not part of the arrangement.
+  const current = await db
+    .select({ id: wallItems.artworkId })
+    .from(wallItems)
+    .innerJoin(artworks, eq(artworks.id, wallItems.artworkId))
+    .where(and(eq(wallItems.wallId, wallId), isVisible()));
   const want = new Set(orderedArtworkIds);
   if (want.size !== orderedArtworkIds.length || want.size !== current.length || current.some((c) => !want.has(c.id))) {
     throw new AppError("INVALID", "The new order doesn't match the works on this wall.");
@@ -123,7 +129,7 @@ export async function setLike(db: AnyDb, userId: string | null | undefined, raw:
   const uid = gate(userId);
   const { artworkId } = parse(likeInput, raw);
   if (liked) {
-    const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), eq(artworks.collection, "china"))).limit(1);
+    const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), isVisible())).limit(1);
     if (!art) throw new AppError("NOT_FOUND", "That artwork isn't in the collection.");
     await db.insert(likes).values({ userId: uid, artworkId }).onConflictDoNothing();
   } else {

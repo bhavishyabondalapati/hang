@@ -26,6 +26,15 @@ export type MetRaw = {
   tags?: Array<{ term?: string }> | null;
 };
 
+/** The text the content filter reads, from a Met record. */
+export function metScreeningText(raw: MetRaw) {
+  return {
+    description: null as string | null,
+    tags: (raw.tags ?? []).map((t) => (t.term ?? "").trim()).filter(Boolean),
+    classification: clean([raw.classification, raw.objectName].filter(Boolean).join(", ")),
+  };
+}
+
 /**
  * Accepts only isPublicDomain=true works with an image, from the Asian Art department, whose culture
  * contains "China". Anything else returns null.
@@ -60,6 +69,7 @@ export function normalizeMet(raw: MetRaw): RawArtwork | null {
       title, medium, mediumGroup, classification: [raw.classification, raw.objectName].filter(Boolean).join(" "),
       tags: (raw.tags ?? []).map((t) => t.term ?? "").filter(Boolean),
     }),
+    ...metScreeningText(raw),
     imageSmall: small,
     imageMedium: small,
     imageLarge: large,

@@ -1,11 +1,13 @@
 import { clean, makeId, mediumGroupOf, toInt, type RawArtwork } from "../artwork";
 import { parseDynasty } from "../dynasty";
+import { stripHtml } from "../content-filter";
 import { classifyThemes } from "../themes";
 
 export const AIC_FIELDS = [
   "id", "title", "artist_display", "artist_title", "date_display", "date_start", "date_end",
   "medium_display", "dimensions", "place_of_origin", "image_id", "thumbnail", "is_public_domain",
   "credit_line", "classification_title", "artwork_type_title", "department_title", "style_title", "short_description",
+  "description", "subject_titles", "term_titles", "classification_titles",
 ].join(",");
 
 export type AicRaw = {
@@ -28,9 +30,22 @@ export type AicRaw = {
   department_title?: string | null;
   style_title?: string | null;
   short_description?: string | null;
+  description?: string | null;
+  subject_titles?: string[] | null;
+  term_titles?: string[] | null;
+  classification_titles?: string[] | null;
 };
 
 const IIIF = "https://www.artic.edu/iiif/2";
+
+/** The text the content filter reads, from an AIC record (also used to backfill works stored before the filter existed). */
+export function aicScreeningText(raw: AicRaw) {
+  return {
+    description: clean([raw.short_description, raw.description].filter(Boolean).map((d) => stripHtml(d!)).join(" ")),
+    tags: [...new Set([...(raw.subject_titles ?? []), ...(raw.term_titles ?? [])].map((t) => t.trim()).filter(Boolean))],
+    classification: clean([...new Set([raw.classification_title, raw.artwork_type_title, ...(raw.classification_titles ?? [])].filter(Boolean))].join(", ")),
+  };
+}
 
 /**
  * Accepts only public-domain works with an image from the Arts of Asia department whose place of
@@ -69,6 +84,7 @@ export function normalizeAic(raw: AicRaw): RawArtwork | null {
       title, medium, mediumGroup, classification: [raw.classification_title, raw.artwork_type_title].filter(Boolean).join(" "),
       description: raw.short_description,
     }),
+    ...aicScreeningText(raw),
     imageSmall: `${base}/full/400,/0/default.jpg`,
     imageMedium: `${base}/full/843,/0/default.jpg`,
     imageLarge: `${base}/full/1686,/0/default.jpg`,

@@ -29,3 +29,6 @@ playwright-report/
 # local scratch
 screenshots/tmp/
 *.log
+
+# local caches (model scores etc.)
+.cache/

@@ -21,5 +21,7 @@ export async function seed(db: Awaited<ReturnType<typeof makeTestDb>>) {
     ...["1", "2", "3", "4"].map((n) => ({ ...base, id: `aic:${n}`, nativeId: n, title: `Work ${n}` })),
     // not part of the Chinese collection: must be invisible and un-addable
     { ...base, id: "aic:900", nativeId: "900", title: "Legacy Western Work", collection: "legacy" },
+    // hidden by the content filter: must be invisible and un-addable too
+    { ...base, id: "aic:901", nativeId: "901", title: "Hidden By Filter", hidden: true, hiddenReason: "keyword: skull" },
   ]);
 }

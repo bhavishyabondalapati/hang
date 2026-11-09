@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import * as schema from "@/db/schema";
 import type { Source } from "./artwork";
 import { DAILY_THEMES } from "./themes";
+import { isVisible } from "./visibility";
 import { hash01 } from "./retry";
 import type { SearchInput } from "./validation";
 
@@ -45,11 +46,11 @@ const cardCols = {
 };
 
 /**
- * Visibility gate applied to every read path (search, feeds, detail, daily piece, rails, sitemap, likes).
- * Only works that passed ingestion (CC0 / public domain, Chinese art, usable image) have collection = "china";
- * anything else is invisible, so no query can surface it.
+ * Visibility gate applied to every read path (search, feeds, detail, daily piece, rails, walls, sitemap, likes).
+ * Only works that passed ingestion (CC0 / public domain, Chinese art, usable image) are in the "china" collection,
+ * and the content filter's `hidden` flag removes the rest; see src/lib/visibility.ts.
  */
-const visible = () => eq(artworks.collection, "china");
+const visible = isVisible;
 
 const cached = <A extends unknown[], R>(fn: (...a: A) => Promise<R>, key: string, revalidate = 3600) =>
   unstable_cache(fn, [key], { tags: [CACHE_TAG], revalidate });
@@ -132,7 +133,7 @@ export async function getArtwork(id: string) {
 export async function moreInColor(id: string, limit = 14) {
   const run = async (artId: string, lim: number) => {
     const db = getDb();
-    const [a] = await db.select({ hue: artworks.hue, s: artworks.saturation, l: artworks.lightness }).from(artworks).where(eq(artworks.id, artId));
+    const [a] = await db.select({ hue: artworks.hue, s: artworks.saturation, l: artworks.lightness }).from(artworks).where(and(eq(artworks.id, artId), visible()));
     if (!a || a.hue == null || a.l == null) return [] as ArtCard[];
     const chromatic = (a.s ?? 0) >= MIN_CHROMA;
     const cond = chromatic
@@ -190,7 +191,7 @@ export async function getWallBySlug(slug: string, viewerId: string | null | unde
     .select({ ...cardCols, position: wallItems.position, imageLarge: artworks.imageLarge })
     .from(wallItems)
     .innerJoin(artworks, eq(artworks.id, wallItems.artworkId))
-    .where(eq(wallItems.wallId, row.wall.id))
+    .where(and(eq(wallItems.wallId, row.wall.id), visible()))
     .orderBy(asc(wallItems.position), asc(wallItems.addedAt))) as Array<ArtCard & { position: number; imageLarge: string }>;
   return { wall: row.wall, owner: row.owner, items, isOwner };
 }
@@ -203,7 +204,7 @@ export async function listMyWalls(userId: string) {
     .select({ wallId: wallItems.wallId, position: wallItems.position, id: artworks.id, title: artworks.title, imageSmall: artworks.imageSmall, color: artworks.dominantColor })
     .from(wallItems)
     .innerJoin(artworks, eq(artworks.id, wallItems.artworkId))
-    .where(inArray(wallItems.wallId, mine.map((w) => w.id)))
+    .where(and(inArray(wallItems.wallId, mine.map((w) => w.id)), visible()))
     .orderBy(asc(wallItems.position));
   return mine.map((w) => {
     const own = items.filter((i) => i.wallId === w.id);

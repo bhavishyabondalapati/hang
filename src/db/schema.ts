@@ -90,6 +90,16 @@ export const artworks = pgTable(
     themes: text("themes").array().notNull().default(sql`'{}'::text[]`),
     /** "china" for the current collection; anything else is leftover data from before the focus change */
     collection: text("collection").notNull().default("legacy"),
+    /** Content filter: hidden works are ignored by every read path, and their detail URL is a 404. */
+    hidden: boolean("hidden").notNull().default(false),
+    /** Why a work is hidden, e.g. "keyword: skull" or "image: horror 0.62". Reviewed in hidden-review.md. */
+    hiddenReason: text("hidden_reason"),
+    /** Text the filter looks at besides the title and artist. Kept so the filter can be re-run without the museum APIs. */
+    description: text("description"),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    classification: text("classification"),
+    /** Set once the keyword and image passes have run on this work. */
+    screenedAt: timestamp("screened_at", { mode: "date" }),
     imageSmall: text("image_small").notNull(),
     imageMedium: text("image_medium").notNull(),
     imageLarge: text("image_large").notNull(),
@@ -122,6 +132,7 @@ export const artworks = pgTable(
     index("artworks_dynasty_idx").on(t.dynasty),
     index("artworks_themes_idx").using("gin", t.themes),
     index("artworks_collection_idx").on(t.collection),
+    index("artworks_hidden_idx").on(t.hidden),
     index("artworks_medium_group_idx").on(t.mediumGroup),
     index("artworks_hue_idx").on(t.hue),
     index("artworks_orientation_idx").on(t.orientation),

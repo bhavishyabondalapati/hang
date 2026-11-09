@@ -43,6 +43,10 @@ export type RawArtwork = {
   culture: string | null;
   dynasty: Dynasty | null;
   themes: ChinaTheme[];
+  /** Text for the content filter (kept in the database so the filter can be re-run). */
+  description: string | null;
+  tags: string[];
+  classification: string | null;
   imageSmall: string;
   imageMedium: string;
   imageLarge: string;

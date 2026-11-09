@@ -17,6 +17,7 @@ Hang is a collection of **Chinese art** to look at slowly, then hang. It gathers
 - **Search**: Postgres full-text search with prefix matching, filter chips for **Theme** (eight themes), **Dynasty** (Shang, Zhou, Han, Tang, Song, Yuan, Ming, Qing, Republic period), museum, medium and orientation, and a 12-swatch colour picker (nearest hue). All state lives in the URL, so every search is shareable.
 - **Artwork page**: the page tints itself from the work's palette. True deep zoom with IIIF tiles for the Art Institute, pan/pinch/wheel zoom for the other two museums. A "More in this color" rail. Like and Add to wall. A link back to the museum. On phones the metadata panel becomes a bottom sheet.
 - **Walls**: three finishes (plaster, gallery white, night), framed works with a title placard marked by a small cinnabar-red seal square, drag-to-reorder (dnd-kit) with keyboard alternatives, a per-wall Open Graph image, and public or private visibility.
+- **Content filter**: works about hell, death, violence or nudity are hidden. A keyword pass reads title, artist, tags, classification and description, and two local image models (an NSFW classifier and CLIP zero-shot) look at the picture. Hidden works vanish from every page and API, and their URL is a 404. Every hidden work is listed with its reason in [`hidden-review.md`](hidden-review.md). The filter is deliberately conservative, so it also hides some harmless works.
 - **Accessibility**: skip link, visible focus, descriptive alt text, full keyboard use including wall reorder (Space and arrows, or Earlier/Later buttons), `aria-live` status messages, `prefers-reduced-motion` honoured everywhere, light and dark themes plus a toggle.
 - **Security**: CSP that only allows the museum image hosts, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. Every input is validated with Zod. Every mutation checks ownership and is rate limited. No secrets reach the client bundle.
 
@@ -64,7 +65,7 @@ All artwork records and images come from the open-access programs of these museu
 - **[Art Institute of Chicago](https://api.artic.edu/docs/)**: department "Arts of Asia", place of origin China, `is_public_domain` works only. IIIF images.
 - **[The Metropolitan Museum of Art](https://metmuseum.github.io/)**: department "Asian Art", culture containing "China", `isPublicDomain=true` works only.
 
-Works with no image, tiny images, or mostly blank or mostly black photographs are skipped at ingest. Every read path (search, feed, detail, today's piece, rails, sitemap, likes) additionally filters to `collection = 'china'`, the marker that a work passed ingestion. Each artwork page shows the museum's own credit line and links back to the museum page.
+Works with no image, tiny images, or mostly blank or mostly black photographs are skipped at ingest. Every read path (search, feed, detail, today's piece, rails, walls, sitemap, OG images, likes) additionally goes through one shared condition, `isVisible()` in `src/lib/visibility.ts`: the work must be in the `china` collection (it passed ingestion) and must not be `hidden` by the content filter. Each artwork page shows the museum's own credit line and links back to the museum page.
 
 ## Tools and libraries, and why
 
@@ -94,6 +95,7 @@ README.md                         this file
 drizzle.config.ts                 drizzle-kit configuration
 drizzle/0000_init.sql             the initial migration (tables, generated tsvector, indexes)
 drizzle/0001_chinese_art.sql      adds dynasty, themes and collection columns with indexes
+drizzle/0002_content_filter.sql   adds hidden, hidden_reason, description, tags, classification, screened_at
 eslint.config.mjs                 ESLint flat config (next core-web-vitals + typescript)
 next.config.ts                    security headers, CSP, image host allow-list
 package.json                      scripts and dependencies
@@ -102,11 +104,18 @@ postcss.config.mjs                Tailwind 4 PostCSS plugin
 tsconfig.json                     TypeScript strict config
 vitest.config.ts                  unit test config
 docs/                             README screenshots
+hidden-review.md                  every hidden work (id, title, reason), written by the filter scripts
+e2e/hidden.spec.ts                E2E: hidden works are 404, absent from search/feed/sitemap/daily/walls, cannot be added or liked
 e2e/browse.spec.ts                E2E: home, search, detail, zoom, headers, theme, 404, API validation
 e2e/helpers.ts                    E2E: mocked sign-in helper
 e2e/walls.spec.ts                 E2E: sign in, create wall, add art, reorder, public view, ownership
 scripts/ingest.ts                 seeds Postgres with Chinese art from the three museums (idempotent, retry, backoff, theme-balanced, quality-gated)
 scripts/prune.ts                  one-off cleanup: removes non-Chinese works and test accounts/walls
+scripts/refilter.ts               runs the content filter over stored works (backfill text, keyword pass, image pass)
+scripts/hidden-review.ts          writes hidden-review.md from the database
+scripts/contact-sheet.ts          review helper: thumbnail grid of the top-scoring works for one image signal
+scripts/lib/met-polite.ts         the slow, polite Met API fetcher shared by ingest and refilter
+scripts/lib/score-cache.ts        on-disk cache of image-model scores (.cache/, git-ignored)
 scripts/migrate.ts                applies SQL migrations to DATABASE_URL
 scripts/screenshots.ts            light/dark x mobile/desktop screenshots of every page
 scripts/readme-shots.ts           captures the README images
@@ -145,6 +154,10 @@ src/app/api/test/sign-in/route.ts test-only sign-in (404 unless E2E_AUTH=1)
 src/components/*                  UI: header/footer, theme toggle, cards, hero, viewer, zoom, wall, forms
 src/lib/adapters/{aic,met,cma}.ts one adapter per museum -> shared Artwork type
 src/lib/artwork.ts                Artwork type, ids, century/medium/orientation helpers
+src/lib/content-filter.ts          keyword pass: terms, whole-word matching, narrow benign-context checks
+src/lib/image-filter.ts           image pass decision logic: labels, thresholds, NSFW + CLIP scores to hide/keep
+src/lib/image-classifier.ts       loads the two local models with transformers.js (scripts only)
+src/lib/visibility.ts             the one isVisible() condition every read path uses
 src/lib/color.ts                  palette extraction, HSL, hue distance, contrast
 src/lib/dynasty.ts                dynasty list and the parser (text first, then year)
 src/lib/themes.ts                 the eight themes, ingest search terms, keyword classifier, daily-piece themes
@@ -155,7 +168,7 @@ src/lib/validation.ts             Zod schemas
 src/lib/rate-limit.ts             sliding-window limiter
 src/lib/retry.ts                  fetch with retry/backoff, concurrency helper, stable hash
 src/lib/errors.ts, api.ts, blur.ts, slug.ts   small shared helpers
-tests/*.test.ts                   unit tests (adapters, dynasty/themes/quality, color, retry, queries, services, actions)
+tests/*.test.ts                   unit tests (adapters, dynasty/themes/quality, content filter, image filter, color, retry, queries, services, actions)
 tests/fixtures/*.json             recorded museum API responses
 tests/helpers/db.ts               in-memory Postgres for tests
 ```
@@ -199,6 +212,18 @@ npm run test:e2e          # Playwright (builds and serves the app on :3100)
 npm run build             # production build
 ```
 
+### The content filter
+
+```bash
+npm run refilter                          # keyword + image pass on works not yet screened
+npm run refilter -- --phase images        # image pass only; re-tuning thresholds is instant (scores are cached)
+npm run refilter -- --phase text --recheck   # re-run the keyword rules on stored text (after editing the list)
+npm run review                            # rewrite hidden-review.md
+RUN_MODEL_TESTS=1 npm test                # also runs the real-model test (downloads the models once)
+```
+
+The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-detector` and `Xenova/clip-vit-base-patch32`. No API keys; the weights download from the Hugging Face hub on first use. `npm run ingest` applies the same filters to every new work, and `-- --dry` runs everything without writing. To bring a hidden work back, set `hidden = false` on its row.
+
 `npm run ingest -- --target 200 --only cma,aic` is handy for a small test seed. Add `--force` to re-analyse works that are already stored. After switching an older database to Chinese art, `npm run prune` (`npx tsx scripts/prune.ts --dry` to preview) removes the leftover non-Chinese works and test accounts.
 
 ## How it was built
@@ -213,6 +238,7 @@ npm run build             # production build
 8. Ran the app, took screenshots of every page (light/dark, mobile/desktop), critiqued them, fixed what was off, and repeated.
 9. Wrote Playwright E2E tests, ran Lighthouse, tightened accessibility and performance.
 10. Narrowed the collection to Chinese art: gated each adapter to its Chinese department, added dynasty and theme fields (parsed from museum wording), replaced the century filter with Dynasty and Theme, made the ingest balance by theme with an image-quality gate, restricted today's piece to on-theme works, and moved the accent to cinnabar red.
+11. Built the content filter: a `hidden` flag honoured by every read path, a keyword pass over the museums' text, and a local image pass (NSFW classifier + CLIP), calibrated against contact sheets of the real scores, with a human-readable review list.
 
 ## Key concepts
 
@@ -222,7 +248,9 @@ npm run build             # production build
 - **Postgres full-text search.** A generated `tsvector` with weights (title > artist > culture > medium) and a GIN index. Prefix queries (`van:*`) make results appear while typing.
 - **Dynasty parsing.** Museums write dynasties as free text ("Qing dynasty (1644–1911), Yongzheng reign"). The parser reads the museum's own wording (never the title: "Song" and "Han" are ordinary words), prefers the earliest mention, recognises reign names, and only falls back to the year when no dynasty is named. If a period outside the nine is named (Jin, Liao, Sui ...) it leaves the field empty rather than guess.
 - **Theme classification.** Keyword rules over title, medium, classification and tags, with guard rails (an "ink landscape" must be a painting, not a vase; a silk-painted fan is not a textile). A work can have several themes.
-- **Defence in depth for what is shown.** Adapters only accept the right department and licence; ingest rejects tiny and blank images; and every query also filters on `collection = 'china'`, so one layer failing cannot surface a wrong work.
+- **Defence in depth for what is shown.** Adapters only accept the right department and licence; ingest rejects tiny and blank images and runs the content filter; and every query goes through one shared `isVisible()` condition, so one layer failing cannot surface a wrong work.
+- **Zero-shot image classification.** CLIP scores an image against text labels with no training. The scores are one probability distribution over all labels, so a label set needs neutral labels describing what the collection really contains, or ordinary objects get squeezed into the unwanted ones. Thresholds were chosen by looking at contact sheets of the top scorers, not guessed.
+- **Precision versus recall.** A "when in doubt, hide" filter trades harmless works for safety. The review file and a `hidden` flag you can flip make that trade visible and reversible.
 - **Colour search.** Hue is circular (350 and 10 are 20 apart), so distance wraps around 360. Neutral works are excluded by a saturation floor.
 - **Authorization at the service layer.** Every mutation goes through one function that checks the session, validates input, rate limits, and verifies ownership, so server actions and REST handlers can't disagree.
 - **Server vs client components.** Pages are server-rendered and cached; the session is read client-side so pages stay cacheable.
@@ -232,7 +260,8 @@ npm run build             # production build
 
 ## Notes on this build
 
-- **Collection size.** 1,757 works: Cleveland 815, Art Institute 458, Met 484. That is short of the ~2,000 goal: the Cleveland and Art Institute Chinese departments are exhausted for these themes, and most remaining Met candidates fail the image-size check. By theme (a work can have several): dragons 287, ink landscapes 280, bird-and-flower 243, blue-and-white & celadon 298, jade 282, calligraphy 280, bronzes 281, silk & embroidery 184. Silk & embroidery is the thin one: Cleveland's and the Art Institute's Chinese departments hold almost no textiles, so it is nearly all Met.
+- **Collection size.** 1,757 works were ingested; the content filter hides 134 of them (100 by keywords, 34 by the image models), leaving **1,623 visible**: Cleveland 735, Art Institute 416, Met 472. That is short of the original ~2,000 goal and was not refilled. By theme (a work can have several): dragons 262, ink landscapes 268, bird-and-flower 230, blue-and-white & celadon 297, jade 267, calligraphy 256, bronzes 229, silk & embroidery 182. Bronzes lost the most (52 hidden), mostly from descriptions mentioning tombs, burial, warfare or "monster masks" (the *taotie* motif). Silk & embroidery is the thin one: Cleveland's and the Art Institute's Chinese departments hold almost no textiles, so it is nearly all Met.
+- **The filter over-hides on purpose.** Most keyword hits are literal matches in museum descriptions ("found in a tomb", "weapon of warfare", "monster mask"), and many image-model hits are false alarms on jade tools and ink paintings. Read `hidden-review.md`; it shows the matched text or the score for every work.
 - **Met images are smaller.** The Met's web images top out around 600px, so its works look softer in the grid and detail view than Cleveland's and the Art Institute's. Deep zoom uses the Met's original.
 
 - **Lighthouse (mobile, simulated throttling, production build, after the switch to Chinese art):** home 94, artwork page 93. Accessibility, best practices and SEO score 100. Performance varies a little run to run.

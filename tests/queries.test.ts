@@ -10,7 +10,7 @@ vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn, revalidatePath
 
 const q = await import("@/lib/queries");
 
-type Seed = { n: string; title: string; dynasty: string | null; themes: string[]; w?: number; h?: number; collection?: string; hue?: number; sat?: number; group?: string };
+type Seed = { n: string; title: string; dynasty: string | null; themes: string[]; w?: number; h?: number; collection?: string; hue?: number; sat?: number; group?: string; hidden?: boolean };
 const works: Seed[] = [
   { n: "1", title: "Dragon Robe", dynasty: "qing", themes: ["dragons", "textiles"], w: 900, h: 1200, hue: 210, sat: 0.5 },
   { n: "2", title: "Nine Dragons Handscroll", dynasty: "song", themes: ["dragons"], w: 3000, h: 900, hue: 30, sat: 0.4, group: "Painting" },
@@ -20,6 +20,9 @@ const works: Seed[] = [
   { n: "6", title: "Ritual Wine Vessel", dynasty: "shang", themes: ["bronzes"], w: 1200, h: 1200 },
   { n: "7", title: "Tiny Bird Painting", dynasty: "ming", themes: ["bird-and-flower"], w: 500, h: 520 }, // too small for the daily piece
   { n: "8", title: "Dragon Jar (hidden)", dynasty: "ming", themes: ["dragons", "porcelain"], w: 1500, h: 1500, collection: "legacy" },
+  // content-filtered works: perfect in every other way (dragon, porcelain, landscape, a good size)
+  { n: "9", title: "Dragon Vase Filtered", dynasty: "qing", themes: ["dragons", "porcelain"], w: 1500, h: 1500, hue: 210, sat: 0.5, hidden: true },
+  { n: "10", title: "Landscape Filtered", dynasty: "song", themes: ["ink-landscapes"], w: 1800, h: 1200, hue: 30, sat: 0.4, hidden: true },
 ];
 
 beforeAll(async () => {
@@ -27,7 +30,7 @@ beforeAll(async () => {
   await db.insert(schema.artworks).values(
     works.map((w) => ({
       id: `cma:${w.n}`, source: "cma" as const, nativeId: w.n, title: w.title, dynasty: w.dynasty, themes: w.themes,
-      collection: w.collection ?? "china", width: w.w, height: w.h, hue: w.hue ?? 0, saturation: w.sat ?? 0, lightness: 0.5,
+      collection: w.collection ?? "china", hidden: w.hidden ?? false, hiddenReason: w.hidden ? "keyword: test" : null, width: w.w, height: w.h, hue: w.hue ?? 0, saturation: w.sat ?? 0, lightness: 0.5,
       mediumGroup: w.group ?? "Other", palette: ["#111111", "#777777", "#cccccc"], imageSmall: "s", imageMedium: "m", imageLarge: "l",
       museum: "Cleveland Museum of Art", sourceUrl: "u", shuffle: Number(w.n) / 10,
     })),
@@ -40,7 +43,7 @@ const search = (raw: Record<string, string>) => q.searchArtworks(searchInput.par
 describe("search filters", () => {
   it("never returns works outside the Chinese collection", async () => {
     const all = await search({});
-    expect(all.total).toBe(7);
+    expect(all.total).toBe(7); // 10 rows: one legacy and two hidden are not counted
     expect(ids(all)).not.toContain("cma:8");
     expect(ids(await search({ q: "dragon" }))).not.toContain("cma:8");
     expect(ids(await search({ theme: "porcelain" }))).toEqual(["cma:4"]);
@@ -66,6 +69,48 @@ describe("search filters", () => {
     expect(searchInput.safeParse({ century: "19" }).success).toBe(true);
     expect(searchInput.safeParse({ dynasty: "tokugawa" }).success).toBe(false);
     expect(searchInput.safeParse({ theme: "cats" }).success).toBe(false);
+  });
+});
+
+describe("content filter: hidden works are invisible on every read path", () => {
+  const hiddenIds = ["cma:9", "cma:10"];
+  it("search, in every filter combination", async () => {
+    for (const raw of [{}, { q: "dragon" }, { q: "filtered" }, { q: "landscape" }, { theme: "dragons" }, { theme: "porcelain" }, { theme: "ink-landscapes" }, { dynasty: "qing" }, { dynasty: "song" }, { hue: "210" }, { hue: "30" }]) {
+      const r = await search(raw as Record<string, string>);
+      for (const id of hiddenIds) expect(ids(r), JSON.stringify(raw)).not.toContain(id);
+    }
+  });
+  it("detail lookup returns nothing (so the page is a 404)", async () => {
+    for (const id of hiddenIds) expect(await q.getArtwork(id)).toBeNull();
+  });
+  it("Wander feed, sitemap and colour rails", async () => {
+    const feed = await q.wander(null, 50);
+    for (const id of hiddenIds) expect(feed.items.map((i) => i.id)).not.toContain(id);
+    const sm = await q.sitemapEntries();
+    for (const id of hiddenIds) expect(sm.art).not.toContain(id);
+    // cma:1 is hue 210, as is the hidden vase: it must not turn up in the rail
+    expect((await q.moreInColor("cma:1")).map((i) => i.id)).not.toContain("cma:9");
+    expect(await q.moreInColor("cma:9")).toEqual([]);
+  });
+  it("today's piece, on every day of a month", async () => {
+    for (let d = 1; d <= 31; d++) {
+      const a = await q.dailyArtwork(`2026-05-${String(d).padStart(2, "0")}`);
+      expect(hiddenIds).not.toContain(a!.id);
+      expect(a!.hidden).toBe(false);
+    }
+  });
+  it("walls (page, preview, counts) and likes", async () => {
+    await db.insert(schema.users).values({ id: "u1", name: "Curator", email: "c@x.test" });
+    const [wall] = await db.insert(schema.walls).values({ userId: "u1", title: "Mixed", slug: "mixed-abcd", isPublic: true }).returning();
+    await db.insert(schema.wallItems).values(["cma:1", "cma:9", "cma:4", "cma:10"].map((a, i) => ({ wallId: wall!.id, artworkId: a, position: i })));
+    await db.insert(schema.likes).values(["cma:2", "cma:9"].map((a) => ({ userId: "u1", artworkId: a })));
+
+    const page = await q.getWallBySlug("mixed-abcd", null);
+    expect(page!.items.map((i) => i.id)).toEqual(["cma:1", "cma:4"]);
+    const mine = await q.listMyWalls("u1");
+    expect(mine[0]!.count).toBe(2);
+    expect(mine[0]!.previews.map((p) => p.id)).toEqual(["cma:1", "cma:4"]);
+    expect((await q.listMyLikes("u1")).map((l) => l.id)).toEqual(["cma:2"]);
   });
 });
 

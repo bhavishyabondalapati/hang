@@ -81,6 +81,9 @@ describe("validation", () => {
     // works outside the Chinese collection (the "legacy" row) cannot be hung or liked
     expect(await code(addToWall(db, "alice", { wallId: wall.id, artworkId: "aic:900" }))).toBe("NOT_FOUND");
     expect(await code(setLike(db, "alice", { artworkId: "aic:900" }, true))).toBe("NOT_FOUND");
+    // ...and neither can works hidden by the content filter
+    expect(await code(addToWall(db, "alice", { wallId: wall.id, artworkId: "aic:901" }))).toBe("NOT_FOUND");
+    expect(await code(setLike(db, "alice", { artworkId: "aic:901" }, true))).toBe("NOT_FOUND");
   });
 });
 
@@ -109,6 +112,18 @@ describe("wall contents", () => {
     expect(await code(reorderWall(db, "alice", { wallId: wall.id, orderedArtworkIds: ["aic:3", "aic:1", "aic:4"] }))).toBe("INVALID");
     expect(await code(reorderWall(db, "alice", { wallId: wall.id, orderedArtworkIds: ["aic:3", "aic:3", "aic:1"] }))).toBe("INVALID");
     expect(await order(wall.id)).toEqual(["aic:3", "aic:1", "aic:2"]);
+  });
+
+  it("keeps reordering working after a work on the wall is hidden", async () => {
+    const wall = await mk();
+    for (const id of ["aic:1", "aic:2", "aic:3"]) await addToWall(db, "alice", { wallId: wall.id, artworkId: id });
+    await db.update(schema.artworks).set({ hidden: true, hiddenReason: "keyword: test" }).where(eq(schema.artworks.id, "aic:2"));
+    // the page only shows (and the client only sends) the two visible works
+    await reorderWall(db, "alice", { wallId: wall.id, orderedArtworkIds: ["aic:3", "aic:1"] });
+    const visibleOrder = (await order(wall.id)).filter((id) => id !== "aic:2");
+    expect(visibleOrder).toEqual(["aic:3", "aic:1"]);
+    // sending the hidden one is not allowed
+    expect(await code(reorderWall(db, "alice", { wallId: wall.id, orderedArtworkIds: ["aic:3", "aic:2", "aic:1"] }))).toBe("INVALID");
   });
 
   it("removes works", async () => {

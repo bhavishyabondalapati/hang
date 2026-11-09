@@ -1,5 +1,6 @@
 import { clean, makeId, mediumGroupOf, toInt, type RawArtwork } from "../artwork";
 import { parseDynasty } from "../dynasty";
+import { stripHtml } from "../content-filter";
 import { classifyThemes } from "../themes";
 
 type CmaImage = { url?: string; width?: string | number; height?: string | number };
@@ -19,8 +20,19 @@ export type CmaRaw = {
   type?: string;
   department?: string;
   description?: string | null;
+  did_you_know?: string | null;
+  find_spot?: string | null;
   creators?: Array<{ description?: string; role?: string }>;
 };
+
+/** The text the content filter reads, from a Cleveland record. */
+export function cmaScreeningText(raw: CmaRaw) {
+  return {
+    description: clean([raw.description, raw.did_you_know, raw.find_spot].filter(Boolean).map((d) => stripHtml(d!)).join(" ")),
+    tags: [] as string[],
+    classification: clean(raw.type),
+  };
+}
 
 /** Only CC0 works with a web image from the Chinese Art department are accepted. */
 export function normalizeCma(raw: CmaRaw): RawArtwork | null {
@@ -53,6 +65,7 @@ export function normalizeCma(raw: CmaRaw): RawArtwork | null {
     culture: clean(raw.culture?.[0]),
     dynasty: parseDynasty([...(raw.culture ?? []), raw.creation_date], dateStart, dateEnd),
     themes: classifyThemes({ title, medium, mediumGroup, classification: raw.type, description: raw.description }),
+    ...cmaScreeningText(raw),
     imageSmall: web.url,
     imageMedium: print?.url ?? web.url,
     imageLarge: print?.url ?? web.url,

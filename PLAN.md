@@ -17,3 +17,4 @@ Each step ends in a working state and its own conventional commit.
 10. **Polish**: Playwright screenshots (light/dark x mobile/desktop), critique, at least two passes.
 11. **Ship**: lint, typecheck, unit, E2E, `next build`; README with diagram; deploy checklist.
 12. **Chinese art focus**: Chinese-only adapters, dynasty + theme fields, theme-balanced ingest with quality gate, prune, Dynasty/Theme filters, on-theme daily piece, cinnabar accent and placard seal.
+13. **Content filter**: `hidden` column and one shared visibility condition, keyword pass, local image pass (NSFW + CLIP), review file, ingest integration, tests.
