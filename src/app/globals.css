@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ---------- tokens: warm paper, ink, one restrained accent (verdigris) ---------- */
+/* ---------- tokens: warm paper, ink, one restrained accent (cinnabar seal red) ---------- */
 :root {
   color-scheme: light;
   --paper: #f3f0e8;
@@ -9,8 +9,9 @@
   --ink: #15130e;
   --ink-2: #47433a;
   --ink-3: #5e5950;
-  --accent: #1d6a58;
+  --accent: #b02a1c;
   --accent-ink: #f3f0e8;
+  --seal: #b8301f;
   --shadow: rgb(21 19 14 / 0.22);
 
   /* type scale (1.25-ish, deliberately few steps) */
@@ -34,8 +35,9 @@
   --ink: #efeadf;
   --ink-2: #c6c0b1;
   --ink-3: #aea998;
-  --accent: #82c8b2;
-  --accent-ink: #0f1a16;
+  --accent: #ec7e69;
+  --accent-ink: #1a0d0a;
+  --seal: #d9503b;
   --shadow: rgb(0 0 0 / 0.55);
 }
 
@@ -48,8 +50,9 @@
     --ink: #efeadf;
     --ink-2: #c6c0b1;
     --ink-3: #aea998;
-    --accent: #82c8b2;
-    --accent-ink: #0f1a16;
+    --accent: #ec7e69;
+    --accent-ink: #1a0d0a;
+    --seal: #d9503b;
     --shadow: rgb(0 0 0 / 0.55);
   }
 }
@@ -205,6 +208,9 @@ img { max-width: 100%; }
 }
 .frame-mat { padding: clamp(8px, 1.4vw, 20px); background: var(--mat); }
 .frame-img { position: relative; display: block; width: 100%; background: var(--c, #888); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18); }
+/* a small red square, like a seal stamped beside the title: flat, slightly uneven, with a carved-out inner square */
+.seal { position: relative; flex: none; width: 1.15rem; height: 1.15rem; margin-top: 0.5rem; background: #b8301f; border-radius: 1.5px 2px 1px 2px; transform: rotate(-1.5deg); }
+.seal::after { content: ""; position: absolute; inset: 0.27rem; border: 1.5px solid rgb(243 240 232 / 0.62); border-radius: 1px; }
 .placard {
   background: var(--mat); color: #1a1812; padding: 1.1rem 1.3rem 1.2rem; max-width: 24rem;
   box-shadow: 0 1px 1px var(--wall-shadow), 0 8px 14px -8px var(--wall-shadow);

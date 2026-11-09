@@ -108,7 +108,10 @@ export function WallView(p: WallProps) {
       <div className="wrap pb-24 pt-10">
         {/* placard */}
         <div className="placard">
-          <h1 className="display text-[clamp(1.6rem,1.2rem+1vw,2.2rem)] leading-[1.1]">{p.title}</h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="display text-[clamp(1.6rem,1.2rem+1vw,2.2rem)] leading-[1.1]">{p.title}</h1>
+            <span className="seal" aria-hidden="true" data-testid="seal" />
+          </div>
           <p className="mt-1 text-[0.95rem]" style={{ color: "#4a443a" }}>
             Hung by {p.owner} <span className="tnum">&middot; {items.length} {items.length === 1 ? "work" : "works"}</span>
           </p>

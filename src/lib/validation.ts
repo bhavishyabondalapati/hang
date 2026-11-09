@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { MEDIUM_GROUPS, SOURCES, THEMES, idSchema } from "./artwork";
+import { DYNASTY_SLUGS } from "./dynasty";
+import { THEME_SLUGS } from "./themes";
 
 const text = (max: number) => z.string().trim().max(max);
 
@@ -41,7 +43,8 @@ const csv = <T extends z.ZodType>(item: T) =>
 export const searchInput = z.object({
   q: text(120).optional(),
   museum: csv(z.enum(SOURCES)),
-  century: csv(z.coerce.number().int().min(-60).max(21)),
+  dynasty: csv(z.enum(DYNASTY_SLUGS)),
+  theme: csv(z.enum(THEME_SLUGS)),
   medium: csv(z.enum(MEDIUM_GROUPS)),
   hue: z.coerce.number().int().min(0).max(359).optional(),
   orientation: z.enum(["landscape", "portrait", "square"]).optional(),

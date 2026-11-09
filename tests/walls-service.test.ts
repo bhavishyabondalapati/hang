@@ -78,6 +78,9 @@ describe("validation", () => {
     const wall = await mk();
     expect(await code(addToWall(db, "alice", { wallId: wall.id, artworkId: "aic:999999" }))).toBe("NOT_FOUND");
     expect(await code(setLike(db, "alice", { artworkId: "met:1" }, true))).toBe("NOT_FOUND");
+    // works outside the Chinese collection (the "legacy" row) cannot be hung or liked
+    expect(await code(addToWall(db, "alice", { wallId: wall.id, artworkId: "aic:900" }))).toBe("NOT_FOUND");
+    expect(await code(setLike(db, "alice", { artworkId: "aic:900" }, true))).toBe("NOT_FOUND");
   });
 });
 

@@ -27,7 +27,7 @@ export default async function Me() {
         {walls.length === 0 ? (
           <div className="py-12">
             <p className="display display-l max-w-[20ch]">Nothing hung yet.</p>
-            <p className="lede mt-3">Make a wall, then open any artwork and choose <em>Add to wall</em>.</p>
+            <p className="lede mt-3">Make a wall, then open any work and choose <em>Add to wall</em>.</p>
           </div>
         ) : (
           <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 xl:grid-cols-3">

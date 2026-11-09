@@ -16,8 +16,10 @@ export async function seed(db: Awaited<ReturnType<typeof makeTestDb>>) {
     { id: "alice", name: "Alice", email: "a@example.com" },
     { id: "bob", name: "Bob", email: "b@example.com" },
   ]);
-  const base = { source: "aic" as const, imageSmall: "s", imageMedium: "m", imageLarge: "l", museum: "AIC", sourceUrl: "u" };
-  await db.insert(schema.artworks).values(
-    ["1", "2", "3", "4"].map((n) => ({ ...base, id: `aic:${n}`, nativeId: n, title: `Work ${n}` })),
-  );
+  const base = { source: "aic" as const, imageSmall: "s", imageMedium: "m", imageLarge: "l", museum: "AIC", sourceUrl: "u", collection: "china" };
+  await db.insert(schema.artworks).values([
+    ...["1", "2", "3", "4"].map((n) => ({ ...base, id: `aic:${n}`, nativeId: n, title: `Work ${n}` })),
+    // not part of the Chinese collection: must be invisible and un-addable
+    { ...base, id: "aic:900", nativeId: "900", title: "Legacy Western Work", collection: "legacy" },
+  ]);
 }

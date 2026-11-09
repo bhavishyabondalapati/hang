@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Dynasty } from "./dynasty";
+import type { ChinaTheme } from "./themes";
 
 export const SOURCES = ["aic", "met", "cma"] as const;
 export type Source = (typeof SOURCES)[number];
@@ -39,6 +41,8 @@ export type RawArtwork = {
   mediumGroup: MediumGroup;
   dimensions: string | null;
   culture: string | null;
+  dynasty: Dynasty | null;
+  themes: ChinaTheme[];
   imageSmall: string;
   imageMedium: string;
   imageLarge: string;
@@ -102,12 +106,15 @@ export function mediumGroupOf(...hints: Array<string | null | undefined>): Mediu
   if (has("photograph", "daguerreotype", "gelatin silver", "albumen", "cyanotype", "tintype")) return "Photograph";
   if (has("woodcut", "etching", "engraving", "lithograph", "print", "aquatint", "mezzotint", "screenprint", "woodblock"))
     return "Print";
+  if (has("hanging scroll", "handscroll", "hand scroll", "album leaf", "album of") || /\b(ink|colou?rs?|ink and colou?rs?)\b[^|]*\bon (silk|paper)\b/.test(s)) return "Painting";
   if (has("drawing", "watercolor", "pastel", "charcoal", "graphite", "pencil", "ink on paper", "gouache", "sketch"))
     return "Drawing";
   if (has("oil on", "tempera", "acrylic", "painting", "fresco", "oil paint", "panel")) return "Painting";
-  if (has("sculpture", "bronze", "marble", "stone", "granite", "terracotta", "relief", "statue", "wood carving"))
+  if (has("porcelain", "stoneware", "earthenware", "celadon", "ceramic", "glaze", "pottery", "faience", "vase")) return "Ceramics";
+  if (has("sculpture", "bronze", "marble", "stone", "granite", "terracotta", "relief", "statue", "wood carving", "jade", "nephrite"))
     return "Sculpture";
-  if (has("textile", "tapestry", "embroider", "silk", "cotton", "wool", "costume", "lace", "carpet", "rug"))
+  // whole-word matching for the short ones ("lace" is inside "place", "rug" inside "drug")
+  if (has("textile", "tapestry", "embroider", "costume", "carpet") || /\b(silk|cotton|wool|lace|rugs?)\b/.test(s))
     return "Textile";
   if (has("ceramic", "porcelain", "stoneware", "earthenware", "glaze", "pottery", "faience", "vase")) return "Ceramics";
   if (has("glass", "furniture", "silver", "gold", "enamel", "jewelry", "metalwork", "lacquer", "ivory", "armor"))

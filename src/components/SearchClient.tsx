@@ -2,7 +2,9 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MEDIUM_GROUPS, MUSEUMS, SOURCES, centuryLabel, type Source } from "@/lib/artwork";
+import { MEDIUM_GROUPS, MUSEUMS, SOURCES, type Source } from "@/lib/artwork";
+import { DYNASTIES } from "@/lib/dynasty";
+import { CHINA_THEMES } from "@/lib/themes";
 import { HUE_SWATCHES } from "@/lib/color";
 import type { ArtCard } from "@/lib/queries";
 import { ArtBatch } from "./ArtCardItem";
@@ -11,20 +13,19 @@ export type Filters = {
   q: string;
   museum: string[];
   medium: string[];
-  century: number[];
+  dynasty: string[];
+  theme: string[];
   hue: number | null;
   orientation: "" | "landscape" | "portrait" | "square";
 };
-
-const CENTURIES = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
-const centuryChip = (c: number) => (c === 12 ? "Before 1300" : centuryLabel(c));
 
 export function toQuery(f: Filters, page = 1): string {
   const p = new URLSearchParams();
   if (f.q.trim()) p.set("q", f.q.trim());
   if (f.museum.length) p.set("museum", f.museum.join(","));
   if (f.medium.length) p.set("medium", f.medium.join(","));
-  if (f.century.length) p.set("century", f.century.join(","));
+  if (f.theme.length) p.set("theme", f.theme.join(","));
+  if (f.dynasty.length) p.set("dynasty", f.dynasty.join(","));
   if (f.hue !== null) p.set("hue", String(f.hue));
   if (f.orientation) p.set("orientation", f.orientation);
   if (page > 1) p.set("page", String(page));
@@ -91,8 +92,8 @@ export function SearchClient({ initialFilters, initial }: { initialFilters: Filt
     return () => io.disconnect();
   }, [loadMore, meta.hasMore]);
 
-  const active = f.museum.length + f.medium.length + f.century.length + (f.hue !== null ? 1 : 0) + (f.orientation ? 1 : 0) + (f.q ? 1 : 0);
-  const clear = () => setF({ q: "", museum: [], medium: [], century: [], hue: null, orientation: "" });
+  const active = f.museum.length + f.medium.length + f.dynasty.length + f.theme.length + (f.hue !== null ? 1 : 0) + (f.orientation ? 1 : 0) + (f.q ? 1 : 0);
+  const clear = () => setF({ q: "", museum: [], medium: [], dynasty: [], theme: [], hue: null, orientation: "" });
 
   return (
     <div className="wrap pb-10">
@@ -102,7 +103,7 @@ export function SearchClient({ initialFilters, initial }: { initialFilters: Filt
         <input
           id="q" type="search" autoComplete="off" spellCheck={false} enterKeyHint="search"
           className="field !text-[clamp(1.25rem,3vw,2rem)] !font-[family-name:var(--font-display)] !min-h-16"
-          placeholder="Try “van gogh”, “kimono”, “night”…"
+          placeholder="Try “dragon”, “celadon”, “plum blossom”…"
           value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })}
         />
       </form>
@@ -124,15 +125,21 @@ export function SearchClient({ initialFilters, initial }: { initialFilters: Filt
         </div>
       </fieldset>
 
-      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6">
+        <ChipGroup label="Theme">
+          {CHINA_THEMES.map((t) => <Chip key={t.slug} on={f.theme.includes(t.slug)} onClick={() => setF({ ...f, theme: toggle(f.theme, t.slug) })}>{t.label}</Chip>)}
+        </ChipGroup>
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <ChipGroup label="Museum">
           {SOURCES.map((s) => <Chip key={s} on={f.museum.includes(s)} onClick={() => setF({ ...f, museum: toggle(f.museum, s) })}>{MUSEUMS[s as Source].short}</Chip>)}
         </ChipGroup>
         <ChipGroup label="Medium">
           {MEDIUM_GROUPS.filter((m) => m !== "Other").map((m) => <Chip key={m} on={f.medium.includes(m)} onClick={() => setF({ ...f, medium: toggle(f.medium, m) })}>{m}</Chip>)}
         </ChipGroup>
-        <ChipGroup label="Century">
-          {CENTURIES.map((c) => <Chip key={c} on={f.century.includes(c)} onClick={() => setF({ ...f, century: toggle(f.century, c) })}>{centuryChip(c)}</Chip>)}
+        <ChipGroup label="Dynasty">
+          {DYNASTIES.map((d) => <Chip key={d.slug} on={f.dynasty.includes(d.slug)} onClick={() => setF({ ...f, dynasty: toggle(f.dynasty, d.slug) })}>{d.label}</Chip>)}
         </ChipGroup>
         <ChipGroup label="Orientation">
           {(["landscape", "portrait", "square"] as const).map((o) => <Chip key={o} on={f.orientation === o} onClick={() => setF({ ...f, orientation: f.orientation === o ? "" : o })}>{o[0]!.toUpperCase() + o.slice(1)}</Chip>)}

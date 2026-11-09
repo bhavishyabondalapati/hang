@@ -84,6 +84,12 @@ export const artworks = pgTable(
     mediumGroup: text("medium_group").notNull().default("Other"),
     dimensions: text("dimensions"),
     culture: text("culture"),
+    /** shang | zhou | han | tang | song | yuan | ming | qing | republic */
+    dynasty: text("dynasty"),
+    /** theme slugs, see src/lib/themes.ts */
+    themes: text("themes").array().notNull().default(sql`'{}'::text[]`),
+    /** "china" for the current collection; anything else is leftover data from before the focus change */
+    collection: text("collection").notNull().default("legacy"),
     imageSmall: text("image_small").notNull(),
     imageMedium: text("image_medium").notNull(),
     imageLarge: text("image_large").notNull(),
@@ -113,6 +119,9 @@ export const artworks = pgTable(
     index("artworks_search_idx").using("gin", t.search),
     index("artworks_source_idx").on(t.source),
     index("artworks_century_idx").on(t.century),
+    index("artworks_dynasty_idx").on(t.dynasty),
+    index("artworks_themes_idx").using("gin", t.themes),
+    index("artworks_collection_idx").on(t.collection),
     index("artworks_medium_group_idx").on(t.mediumGroup),
     index("artworks_hue_idx").on(t.hue),
     index("artworks_orientation_idx").on(t.orientation),

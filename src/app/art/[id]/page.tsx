@@ -6,7 +6,9 @@ import { ArtRail } from "@/components/ArtCardItem";
 import { ArtViewer } from "@/components/ArtViewer";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Swatches } from "@/components/TodayHero";
-import { MUSEUMS, centuryLabel, idSchema } from "@/lib/artwork";
+import { MUSEUMS, idSchema } from "@/lib/artwork";
+import { dynastyLabel } from "@/lib/dynasty";
+import { themeLabel } from "@/lib/themes";
 import { altFor } from "@/lib/blur";
 import { getArtwork, moreInColor } from "@/lib/queries";
 
@@ -47,7 +49,7 @@ export default async function ArtPage({ params }: { params: Promise<{ id: string
     ["Medium", a.medium],
     ["Dimensions", a.dimensions],
     ["Culture", a.culture],
-    ["Period", a.century ? centuryLabel(a.century) : null],
+    ["Dynasty", dynastyLabel(a.dynasty)],
     ["Museum", a.museum],
     ["Credit", a.creditLine],
   ];
@@ -67,6 +69,11 @@ export default async function ArtPage({ params }: { params: Promise<{ id: string
             <h1 className="display mt-1 text-[clamp(1.9rem,1.4rem+1.2vw,2.7rem)] [text-wrap:balance]">{a.title}</h1>
             <p className="mt-2 text-[1.15rem] text-ink-2">{a.artist ?? "Artist unknown"}</p>
             <div className="mt-6"><ArtActions artworkId={a.id} museumUrl={a.sourceUrl} museumName={museum.short} /></div>
+            {a.themes.length > 0 && (
+              <p className="mt-5 flex flex-wrap gap-1.5" aria-label="Themes">
+                {a.themes.map((t) => <Link key={t} href={`/search?theme=${t}`} className="chip no-underline">{themeLabel(t)}</Link>)}
+              </p>
+            )}
             <dl className="mt-8 grid grid-cols-[6.5rem_1fr] gap-x-4 gap-y-3 text-[0.95rem]">
               {rows.filter(([, v]) => v).map(([k, v]) => (
                 <div key={k} className="contents">
@@ -77,7 +84,7 @@ export default async function ArtPage({ params }: { params: Promise<{ id: string
             </dl>
             <h2 className="meta mt-8 mb-2">Palette</h2>
             <Swatches palette={a.palette} />
-            <p className="meta mt-6">Public domain (CC0). Found in the {museum.name} open collection.</p>
+            <p className="meta mt-6">Public domain (CC0). From the {museum.name} open collection.</p>
           </article>
         </BottomSheet>
       </div>

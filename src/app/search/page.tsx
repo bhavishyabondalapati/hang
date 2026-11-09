@@ -15,7 +15,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SP }): 
   const p = await parse(searchParams);
   return {
     title: p.q ? `“${p.q}”` : "Search",
-    description: "Search public-domain art by title, artist, culture, medium, century or colour.",
+    description: "Search Chinese art by theme, dynasty, museum, medium or colour: dragons, ink landscapes, porcelain, jade, silk, calligraphy and bronzes.",
     alternates: { canonical: "/search" },
     robots: p.q || p.hue !== undefined ? { index: false, follow: true } : undefined,
   };
@@ -28,7 +28,8 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
     q: p.q ?? "",
     museum: p.museum ?? [],
     medium: p.medium ?? [],
-    century: p.century ?? [],
+    dynasty: p.dynasty ?? [],
+    theme: p.theme ?? [],
     hue: p.hue ?? null,
     orientation: p.orientation ?? "",
   };

@@ -77,7 +77,7 @@ export async function addToWall(db: AnyDb, userId: string | null | undefined, ra
   const uid = gate(userId);
   const { wallId, artworkId } = parse(wallItemInput, raw);
   const wall = await ownedWall(db, uid, wallId);
-  const [art] = await db.select({ id: artworks.id }).from(artworks).where(eq(artworks.id, artworkId)).limit(1);
+  const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), eq(artworks.collection, "china"))).limit(1);
   if (!art) throw new AppError("NOT_FOUND", "That artwork isn't in the collection.");
   const [stats] = await db.select({ n: count(), top: max(wallItems.position) }).from(wallItems).where(eq(wallItems.wallId, wallId));
   if ((stats?.n ?? 0) >= MAX_ITEMS_PER_WALL) throw new AppError("LIMIT", `A wall holds up to ${MAX_ITEMS_PER_WALL} works.`);
@@ -123,7 +123,7 @@ export async function setLike(db: AnyDb, userId: string | null | undefined, raw:
   const uid = gate(userId);
   const { artworkId } = parse(likeInput, raw);
   if (liked) {
-    const [art] = await db.select({ id: artworks.id }).from(artworks).where(eq(artworks.id, artworkId)).limit(1);
+    const [art] = await db.select({ id: artworks.id }).from(artworks).where(and(eq(artworks.id, artworkId), eq(artworks.collection, "china"))).limit(1);
     if (!art) throw new AppError("NOT_FOUND", "That artwork isn't in the collection.");
     await db.insert(likes).values({ userId: uid, artworkId }).onConflictDoNothing();
   } else {

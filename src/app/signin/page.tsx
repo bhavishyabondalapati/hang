@@ -15,7 +15,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
     <div className="wrap grid gap-10 py-20 md:grid-cols-2">
       <div>
         <h1 className="display display-xl max-w-[12ch]">Hang your own walls.</h1>
-        <p className="lede mt-5">Sign in to save works you love, gather them on a wall, and share it with a link. Browsing never needs an account.</p>
+        <p className="lede mt-5">Sign in to save Chinese works you love, gather them on a wall, and share it with a link. Browsing never needs an account.</p>
       </div>
       <form
         className="self-end"

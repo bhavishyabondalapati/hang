@@ -13,7 +13,7 @@ export default async function Home() {
     return (
       <div className="wrap py-24">
         <h1 className="display display-xl max-w-[16ch]">The walls are still bare.</h1>
-        <p className="lede mt-4">No artworks are in the database yet. Run <code>npm run ingest</code> to hang the first batch.</p>
+        <p className="lede mt-4">No Chinese artworks are in the database yet. Run <code>npm run ingest</code> to hang the first batch.</p>
       </div>
     );
   }
@@ -23,7 +23,7 @@ export default async function Home() {
       <section className="wrap mt-24" aria-labelledby="wander-h">
         <div className="mb-8 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
           <h2 id="wander-h" className="display display-l">Wander</h2>
-          <p className="lede !text-[1rem]">Three museums, no order. Follow whatever catches your eye.</p>
+          <p className="lede !text-[1rem]">Over three thousand years of Chinese art, in no order. Follow whatever catches your eye.</p>
         </div>
         <InfiniteBatches initial={feed.items} initialCursor={feed.nextCursor} />
       </section>

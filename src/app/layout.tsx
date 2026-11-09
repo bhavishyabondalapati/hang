@@ -13,8 +13,8 @@ const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
-  title: { default: "Hang: look at art, then hang it", template: "%s · Hang" },
-  description: "Browse public-domain art from the Art Institute of Chicago, the Met and the Cleveland Museum of Art, and hang your own walls.",
+  title: { default: "Hang: Chinese art to look at, then hang", template: "%s · Hang" },
+  description: "A collection of public-domain Chinese art from the Cleveland Museum of Art, the Art Institute of Chicago and the Met: dragons, ink landscapes, porcelain, jade, silk, calligraphy and bronzes. Hang your own walls.",
   openGraph: { type: "website", siteName: "Hang" },
   twitter: { card: "summary_large_image" },
 };

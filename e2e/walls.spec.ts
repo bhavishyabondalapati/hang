@@ -24,6 +24,7 @@ test("sign in (mocked), create a wall, add art, reorder, share publicly", async 
   await expect(page).toHaveURL(/\/walls\/e2e-salon-/);
   const slug = page.url().split("/walls/")[1]!;
   await expect(page.getByRole("heading", { level: 1, name: "E2E Salon" })).toBeVisible();
+  await expect(page.getByTestId("seal")).toBeVisible(); // the small red seal beside the placard title
   await expect(page.getByText("An empty wall, waiting.")).toBeVisible();
 
   // add three works through the real "Add to wall" UI on detail pages

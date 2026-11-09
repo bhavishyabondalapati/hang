@@ -34,7 +34,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 72, lineHeight: 1.05, fontWeight: 600, maxWidth: 840 }}>{data?.wall.title ?? "Hang"}</div>
             <div style={{ fontSize: 28, marginTop: 10, opacity: 0.75 }}>
-              {data ? `${data.items.length} works, hung by ${data.owner.name ?? "a curator"}` : "Look at art, then hang it."}
+              {data ? `${data.items.length} works, hung by ${data.owner.name ?? "a curator"}` : "Chinese art to look at, then hang."}
             </div>
           </div>
           <div style={{ fontSize: 54, fontWeight: 600 }}>Hang</div>

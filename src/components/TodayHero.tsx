@@ -21,7 +21,7 @@ export function TodayHero({ art, date }: { art: ArtworkRow; date: string }) {
   return (
     <section aria-labelledby="today-h">
       <TransitionLink href={artHref(art.id)} name={vtName(art.id)} className="block" >
-        <div className="relative h-[min(66svh,56vw)] min-h-[360px] w-full overflow-hidden bg-paper-3" data-vt style={{ background: art.dominantColor ?? undefined }}>
+        <div className="relative h-[min(66svh,56vw)] min-h-[360px] w-full overflow-hidden bg-paper-3" data-vt style={{ background: art.palette[0] ?? art.dominantColor ?? undefined }}>
           <Image
             src={art.imageMedium}
             alt={altFor(art)}
@@ -32,7 +32,7 @@ export function TodayHero({ art, date }: { art: ArtworkRow; date: string }) {
             quality={72}
             placeholder="blur"
             blurDataURL={blurFor(art.dominantColor)}
-            className="kenburns object-cover"
+            className={`kenburns ${(art.width ?? 1) >= (art.height ?? 1) ? "object-cover" : "object-contain"}`}
           />
         </div>
       </TransitionLink>
