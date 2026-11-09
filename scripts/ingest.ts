@@ -57,31 +57,56 @@ const MET_TERMS = [
   "still life", "drawing", "sculpture", "textile", "ceramic", "photograph", "sea", "mountain", "night",
 ];
 
+/**
+ * The Met sits behind a WAF that temporarily blocks clients that go too fast (HTTP 403 with an HTML page).
+ * So: strictly sequential, ~3 requests/second, and if blocked we wait it out, then give up after a few
+ * tries. Everything already collected is still stored, and re-running resumes (idempotent).
+ */
+const MET_GAP_MS = 350;
+const BLOCK_WAIT_MS = 120_000;
+const MAX_BLOCKS = 3;
+
+async function metGet<T>(url: string): Promise<T | null | "blocked"> {
+  const res = await fetch(url, { headers: { "User-Agent": "Hang/0.1 (educational art-curation project)" } });
+  if (res.status === 403 || res.status === 429) return "blocked";
+  if (!res.ok) return null;
+  const type = res.headers.get("content-type") ?? "";
+  if (!type.includes("json")) return "blocked";
+  return (await res.json()) as T;
+}
+
 async function collectMet(n: number): Promise<RawArtwork[]> {
   const base = "https://collectionapi.metmuseum.org/public/collection/v1";
+  let blocks = 0;
   const pools: number[][] = [];
   for (const q of MET_TERMS) {
-    const r = await fetchJson<{ objectIDs: number[] | null }>(
-      `${base}.1/search?hasImages=true&isPublicDomain=true&q=${encodeURIComponent(q)}&limit=120&offset=0`,
-    );
-    pools.push((r.objectIDs ?? []).slice(0, 120));
-    await pause(150);
+    const url = `${base}.1/search?hasImages=true&isPublicDomain=true&q=${encodeURIComponent(q)}&limit=120&offset=0`;
+    let r = await metGet<{ objectIDs: number[] | null }>(url);
+    while (r === "blocked" && blocks < MAX_BLOCKS) {
+      blocks++; log(`met blocked, waiting ${BLOCK_WAIT_MS / 1000}s (${blocks}/${MAX_BLOCKS})`);
+      await pause(BLOCK_WAIT_MS); r = await metGet(url);
+    }
+    if (r === "blocked") { log("met still blocked; stopping Met collection. Re-run later."); return []; }
+    pools.push((r?.objectIDs ?? []).slice(0, 120));
+    await pause(MET_GAP_MS);
   }
-  // Interleave search terms so the sample is varied, then dedupe.
   const ids: number[] = [];
   const seenId = new Set<number>();
   for (let i = 0; i < 120; i++) for (const p of pools) { const id = p[i]; if (id && !seenId.has(id)) { seenId.add(id); ids.push(id); } }
   log(`met candidates: ${ids.length}`);
 
   const out: RawArtwork[] = [];
-  for (let i = 0; i < ids.length && out.length < n; i += 40) {
-    const chunk = ids.slice(i, i + 40);
-    const objs = await mapLimit(chunk, 4, async (id) => {
-      try { return await fetchJson<MetRaw>(`${base}/objects/${id}`); } catch { return null; }
-    });
-    for (const o of objs) { const a = o && normalizeMet(o); if (a) out.push(a); }
-    log(`met objects: ${out.length}/${n}`);
-    await pause(250);
+  for (let i = 0; i < ids.length && out.length < n; i++) {
+    const r = await metGet<MetRaw>(`${base}/objects/${ids[i]}`);
+    if (r === "blocked") {
+      if (++blocks > MAX_BLOCKS) { log("met blocked again; keeping what we have. Re-run later."); break; }
+      log(`met blocked, waiting ${BLOCK_WAIT_MS / 1000}s (${blocks}/${MAX_BLOCKS})`);
+      await pause(BLOCK_WAIT_MS); i--; continue;
+    }
+    const a = r && normalizeMet(r);
+    if (a) out.push(a);
+    if (out.length % 50 === 0 && r) log(`met objects: ${out.length}/${n}`);
+    await pause(MET_GAP_MS);
   }
   return out.slice(0, n);
 }
