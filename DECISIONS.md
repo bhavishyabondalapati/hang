@@ -42,3 +42,7 @@ Judgement calls made without stopping to ask.
 - **Met image size.** The Met API gives no pixel size and its web renditions top out near 600px, so "tiny" is judged from the original image's file size (a HEAD request). The Met works are therefore shown at about 600px in the grid and detail view; deep zoom uses the original.
 - **Today's piece.** Only dragon, ink landscape, bird-and-flower and porcelain works whose shorter side is at least 600px; tall works are shown whole (object-contain) on their own palette colour instead of being cropped.
 - **Accent.** Cinnabar `#b02a1c` on paper and `#ec7e69` in dark mode (both AA on every surface). The wall placard seal is a plain flat red square with a carved inner square: no characters, no decorative motifs, no special fonts.
+
+## Image qualities
+
+- `images.qualities` is `[72, 75, 85]`: 72 (`TodayHero`) and 85 (`ArtViewer`) are the explicit `quality` props; 75 is Next's default for every other `next/image`. Add a value here whenever a new `quality` prop is introduced.

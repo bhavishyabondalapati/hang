@@ -37,6 +37,8 @@ const config: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [360, 640, 828, 1080, 1440, 1920, 2560],
+    // Every `quality` prop used in src must be listed here (Next 15.5+ warns otherwise).
+    qualities: [72, 75, 85],
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
   async headers() {
