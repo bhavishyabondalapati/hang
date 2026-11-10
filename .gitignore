@@ -32,3 +32,6 @@ screenshots/tmp/
 
 # local caches (model scores etc.)
 .cache/
+
+# Screenshot runs (npm run screenshots). Curated README images live in docs/.
+screenshots/

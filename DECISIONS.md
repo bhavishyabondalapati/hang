@@ -46,3 +46,8 @@ Judgement calls made without stopping to ask.
 ## Image qualities
 
 - `images.qualities` is `[72, 75, 85]`: 72 (`TodayHero`) and 85 (`ArtViewer`) are the explicit `quality` props; 75 is Next's default for every other `next/image`. Add a value here whenever a new `quality` prop is introduced.
+
+## Removed stale screenshot sets (2026-11-10)
+
+- `screenshots/pass1` and `screenshots/pass2` were captured before the switch to Chinese art. They showed Western works including nudes and an *Inferno* scene with a demon, which breaks the "no scary or nude art anywhere" rule. `screenshots/china1` predates the content filter and showed mortuary figures that the filter now hides. All three are deleted and `screenshots/` is now gitignored; the curated README images in `docs/` were checked and are clean.
+- They are still in git history (the pass1/pass2 commits were pushed). Purging them would need a history rewrite and a force-push, which I did not do; the command is in `~/projects/STATUS.md`.
