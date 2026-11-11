@@ -35,3 +35,8 @@ screenshots/tmp/
 
 # Screenshot runs (npm run screenshots). Curated README images live in docs/.
 screenshots/
+
+# agent instruction files
+AGENTS.md
+CLAUDE.md
+.claude/
