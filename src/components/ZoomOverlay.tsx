@@ -95,6 +95,8 @@ function PanZoomViewer({ src, title, apiRef }: { src: string; title: string; api
   const pts = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ d: number; k: number } | null>(null);
   const [ready, setReady] = useState(false);
+  // True while a finger or the mouse is down, so the image follows it without the easing transition.
+  const [dragging, setDragging] = useState(false);
 
   const clampK = (k: number) => Math.min(8, Math.max(1, k));
   const zoomAt = useCallback((f: number, cx?: number, cy?: number) => {
@@ -124,6 +126,7 @@ function PanZoomViewer({ src, title, apiRef }: { src: string; title: string; api
   function down(e: React.PointerEvent) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    setDragging(true);
     if (pts.current.size === 2) {
       const [a, b] = [...pts.current.values()] as [{ x: number; y: number }, { x: number; y: number }];
       pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), k: t.k };
@@ -144,6 +147,7 @@ function PanZoomViewer({ src, title, apiRef }: { src: string; title: string; api
   }
   function up(e: React.PointerEvent) {
     pts.current.delete(e.pointerId);
+    setDragging(pts.current.size > 0);
     if (pts.current.size < 2) pinch.current = null;
   }
   function key(e: React.KeyboardEvent) {
@@ -169,7 +173,7 @@ function PanZoomViewer({ src, title, apiRef }: { src: string; title: string; api
       <img
         src={src} alt={title} draggable={false} onLoad={() => setReady(true)}
         className="max-h-full max-w-full object-contain"
-        style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})`, transition: pts.current.size ? "none" : "transform 0.18s ease-out", opacity: ready ? 1 : 0.4 }}
+        style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})`, transition: dragging ? "none" : "transform 0.18s ease-out", opacity: ready ? 1 : 0.4 }}
       />
     </div>
   );

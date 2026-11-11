@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type Mode = "light" | "dark";
 
@@ -10,15 +10,26 @@ function current(): Mode {
   return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+/** Tell React when the theme changes: the data-theme attribute on <html>, or the system setting. */
+function subscribe(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  const media = matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onChange);
+  return () => {
+    observer.disconnect();
+    media.removeEventListener("change", onChange);
+  };
+}
+
 export function ThemeToggle() {
-  const [mode, setMode] = useState<Mode | null>(null);
-  useEffect(() => setMode(current()), []);
+  // The theme lives on <html>, outside React. On the server (and the first client render) it is unknown: null.
+  const mode = useSyncExternalStore<Mode | null>(subscribe, current, () => null);
 
   function toggle() {
     const next: Mode = (mode ?? current()) === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem("hang-theme", next); } catch {}
-    setMode(next);
   }
 
   return (
