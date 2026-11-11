@@ -1,5 +1,7 @@
 # Hang
 
+**Live site:** https://hang-dusky.vercel.app · **Code:** https://github.com/bhavishyabondalapati/hang
+
 ![Hang home page: today's piece, full bleed](docs/hero.png)
 
 ## What it does
@@ -19,7 +21,7 @@ Hang is a collection of **Chinese art** to look at slowly, then hang. It gathers
 - **Walls**: three finishes (plaster, gallery white, night), framed works with a title placard marked by a small cinnabar-red seal square, drag-to-reorder (dnd-kit) with keyboard alternatives, a per-wall Open Graph image, and public or private visibility.
 - **Content filter**: works about hell, death, violence or nudity are hidden. A keyword pass reads title, artist, tags, classification and description, and two local image models (an NSFW classifier and CLIP zero-shot) look at the picture. Hidden works vanish from every page and API, and their URL is a 404. Every hidden work is listed with its reason in [`hidden-review.md`](hidden-review.md). The filter is deliberately conservative, so it also hides some harmless works.
 - **Accessibility**: skip link, visible focus, descriptive alt text, full keyboard use including wall reorder (Space and arrows, or Earlier/Later buttons), `aria-live` status messages, `prefers-reduced-motion` honoured everywhere, light and dark themes plus a toggle.
-- **Security**: CSP that only allows the museum image hosts, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. Every input is validated with Zod. Every mutation checks ownership and is rate limited. No secrets reach the client bundle.
+- **Security**: CSP that only allows the museum image hosts, HSTS, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. Every input is validated with Zod. Every mutation checks ownership and is rate limited. No secrets reach the client bundle.
 
 ## Architecture
 
@@ -89,8 +91,8 @@ Works with no image, tiny images, or mostly blank or mostly black photographs ar
 ```
 .env.example                      placeholder env vars (copy to .env.local)
 .gitignore                        ignores env files, build output, node_modules, OS files
-DECISIONS.md                      judgement calls made while building
-PLAN.md                           the build plan, in order
+.github/workflows/ci.yml          CI: lint, typecheck and unit tests on every push and pull request; the build runs when a DATABASE_URL secret is set
+LICENSE                           MIT license for the code
 README.md                         this file
 drizzle.config.ts                 drizzle-kit configuration
 drizzle/0000_init.sql             the initial migration (tables, generated tsvector, indexes)
@@ -228,7 +230,7 @@ The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-
 
 ## How it was built
 
-1. Wrote `PLAN.md`, scaffolded Next 15, strict TypeScript, Tailwind, lint and test configs.
+1. Planned the build in steps, scaffolded Next 15, strict TypeScript, Tailwind, lint and test configs.
 2. Modelled the data in Drizzle: Auth.js tables, `artworks` with a generated `tsvector` column and indexes, `walls`, `wall_items`, `likes`. Generated and applied a migration.
 3. Recorded real API responses as fixtures and wrote one adapter per museum, with tests.
 4. Wrote the ingestion script (retry with backoff, concurrency limit, sharp palette and hue/lightness, upsert so it is idempotent).
@@ -266,7 +268,7 @@ The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-
 
 - **Lighthouse (mobile, simulated throttling, production build, after the switch to Chinese art):** home 94, artwork page 93. Accessibility, best practices and SEO score 100. Performance varies a little run to run.
 - **Met politeness.** The Met's API is fronted by a bot filter that blocked this machine's IP once before. The Met collector now runs strictly one request at a time at about one per second, waits out a block at most twice, and gives up instead of pushing. Re-running `npm run ingest -- --only met` resumes where it left off.
-- **Rate limiting** is in memory per server instance (see `DECISIONS.md`).
+- **Rate limiting** is in memory per server instance. It resets when an instance is recycled, so it is friction against abuse, not a strict global limit; a shared store (for example Upstash) is the upgrade path.
 
 ## Deploy to Vercel
 
@@ -288,4 +290,6 @@ The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-
 
 ## License
 
-Code: no license has been chosen yet; add one before inviting contributions. Artwork images and data are public domain and come from the museums credited above.
+The code in this repository is released under the [MIT License](LICENSE). Copyright (c) 2026 Bhavishya Bondalapati.
+
+MIT covers the code only. Artwork images and records are not stored in this repository (apart from a few recorded API responses used as test fixtures). They are public domain / CC0 and belong to the open-access programs of the museums credited above.
