@@ -1,0 +1,32 @@
+# CI: lint, typecheck and unit tests need no database or secrets; the build needs DATABASE_URL.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      # The build prerenders the home page from the database, so it needs DATABASE_URL.
+      # Add it as a repository secret (a read-only or dev-branch Neon URL) to turn this step on.
+      # Without the secret (for example on pull requests from forks) the build is skipped.
+      - name: Build
+        if: env.DATABASE_URL != ''
+        run: npm run build
