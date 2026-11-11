@@ -42,7 +42,7 @@ flowchart LR
 
   SH --> PG[("Neon Postgres<br/>artworks + tsvector<br/>walls, wall_items, likes<br/>Auth.js tables")]
 
-  subgraph Next["Next.js 15 on Vercel"]
+  subgraph Next["Next.js 16 on Vercel"]
     RSC["Server Components<br/>cached reads + revalidate tags"]
     SA["Server Actions + route handlers<br/>Zod, ownership, rate limit"]
     AUTH["Auth.js v5 (GitHub)"]
@@ -73,7 +73,7 @@ Works with no image, tiny images, or mostly blank or mostly black photographs ar
 
 | Tool | Why |
 |---|---|
-| Next.js 15 (App Router) | Server Components for fast cached reads, Server Actions for mutations, `next/image`, `next/og`. |
+| Next.js 16 (App Router) | Server Components for fast cached reads, Server Actions for mutations, `next/image`, `next/og`. |
 | TypeScript (strict) | Catches shape mistakes between the three museum APIs and the database. |
 | Tailwind CSS 4 + CSS variables | Utility layout, with one token system powering light/dark mode and per-artwork tinting. |
 | Framer Motion | Enter/exit animation for the Add-to-wall menu and the zoom overlay, with `MotionConfig` honouring reduced motion. Everything else is CSS or the View Transitions API. |
@@ -241,6 +241,7 @@ The models run locally in Node (transformers.js, ONNX): `AdamCodd/vit-base-nsfw-
 9. Wrote Playwright E2E tests, ran Lighthouse, tightened accessibility and performance.
 10. Narrowed the collection to Chinese art: gated each adapter to its Chinese department, added dynasty and theme fields (parsed from museum wording), replaced the century filter with Dynasty and Theme, made the ingest balance by theme with an image-quality gate, restricted today's piece to on-theme works, and moved the accent to cinnabar red.
 11. Built the content filter: a `hidden` flag honoured by every read path, a keyword pass over the museums' text, and a local image pass (NSFW classifier + CLIP), calibrated against contact sheets of the real scores, with a human-readable review list.
+12. Upgraded from Next 15 to Next 16 (which also cleared a high-severity `postcss` advisory), moved ESLint to Next's flat config, and fixed the two components the stricter React lint rules flagged.
 
 ## Key concepts
 
